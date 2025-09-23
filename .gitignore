@@ -169,3 +169,5 @@ temp/
 tmp/
 .secrets/
 config/local.py
+
+.ruff_cache/
