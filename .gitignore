@@ -171,3 +171,5 @@ tmp/
 config/local.py
 
 .ruff_cache/
+
+docs/

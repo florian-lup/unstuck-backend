@@ -70,12 +70,10 @@ class PerplexityClient:
 
         # Add system prompt for gaming context
         system_prompt = (
-            "You are a specialized AI assistant for gaming information. "
-            "Provide detailed, accurate, and up-to-date information about video games, "
-            "gaming hardware, gaming news, game reviews, gaming tips, and the gaming industry. "
-            "Focus on being helpful to gamers and gaming enthusiasts. "
-            "When discussing games, include relevant details like platforms, release dates, "
-            "developers, and key features when available."
+            "Provide detailed, accurate gaming information from your search results only."
+            "If you cannot find reliable sources for specific information, clearly state "
+            "what information could not be verified rather than speculating. "
+            "Focus on factual, up-to-date information from your search results."
         )
         messages.append({"role": "system", "content": system_prompt})
 
