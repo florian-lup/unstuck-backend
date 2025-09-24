@@ -1,5 +1,7 @@
 """Application configuration management."""
 
+from typing import Any
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,20 +18,80 @@ class Settings(BaseSettings):
     host: str = Field(default="0.0.0.0", description="Server host")
     port: int = Field(default=8000, description="Server port")
 
+    # Security
+    secret_key: str = Field(
+        default="your-secret-key-here-change-in-production",
+        description="Secret key for JWT encoding",
+        alias="SECRET_KEY",
+    )
+    algorithm: str = Field(default="HS256", description="JWT encoding algorithm")
+    access_token_expire_minutes: int = Field(
+        default=30, description="JWT access token expiration time in minutes"
+    )
+
+    # Auth0
+    auth0_domain: str = Field(..., description="Auth0 domain", alias="AUTH0_DOMAIN")
+    auth0_api_audience: str = Field(
+        ..., description="Auth0 API audience", alias="AUTH0_API_AUDIENCE"
+    )
+    auth0_issuer: str = Field(
+        default="", description="Auth0 issuer URL (auto-generated from domain)"
+    )
+    auth0_jwks_url: str = Field(
+        default="", description="Auth0 JWKS URL (auto-generated from domain)"
+    )
+
+    # Rate Limiting
+    rate_limit_requests: int = Field(
+        default=100, description="Rate limit: requests per minute"
+    )
+    rate_limit_window: int = Field(
+        default=60, description="Rate limit: time window in seconds"
+    )
+
+    # Rate limiting is now handled in-memory (no Redis required)
+
     # Perplexity AI (Required)
     perplexity_api_key: str = Field(
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
-    # CORS
+    # CORS - Updated for Electron app
     allowed_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://127.0.0.1:3000"],
-        description="CORS allowed origins",
+        default=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+            "capacitor://localhost",
+            "ionic://localhost",
+            "http://localhost",
+            "http://127.0.0.1",
+        ],
+        description="CORS allowed origins - includes Electron app origins",
+    )
+    allowed_methods: list[str] = Field(
+        default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        description="CORS allowed methods",
+    )
+    allowed_headers: list[str] = Field(
+        default=["*"], description="CORS allowed headers"
     )
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize settings and auto-generate Auth0 URLs."""
+        super().__init__(**kwargs)
+
+        # Auto-generate Auth0 URLs if not provided
+        if not self.auth0_issuer and self.auth0_domain:
+            self.auth0_issuer = f"https://{self.auth0_domain}/"
+
+        if not self.auth0_jwks_url and self.auth0_domain:
+            self.auth0_jwks_url = f"https://{self.auth0_domain}/.well-known/jwks.json"
 
 
 # Global settings instance
