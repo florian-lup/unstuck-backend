@@ -45,7 +45,7 @@ def main() -> None:
 
                 # Search with conversation context
                 request = GamingSearchRequest(
-                    query=query, conversation_id=conversation_id, temperature=0.2
+                    query=query, conversation_id=conversation_id
                 )
 
                 response = service.search(request)

@@ -115,7 +115,6 @@ class GamingSearchService:
             response = perplexity_client.gaming_search(
                 query=request.query,
                 conversation_history=conversation_history,
-                temperature=request.temperature,
             )
 
             # Store user message in conversation

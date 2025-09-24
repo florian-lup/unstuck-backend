@@ -25,12 +25,7 @@ class GamingSearchRequest(BaseModel):
     conversation_history: list[ConversationMessage] | None = Field(
         default=None, description="Previous messages in the conversation"
     )
-    temperature: float = Field(
-        default=0.2,
-        ge=0.0,
-        le=2.0,
-        description="Response creativity (0.0 = deterministic, 2.0 = very creative)",
-    )
+    # temperature removed - now handled in config
 
 
 class SearchResult(BaseModel):
