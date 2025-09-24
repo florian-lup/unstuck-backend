@@ -5,6 +5,7 @@ from enum import Enum
 
 class Environment(str, Enum):
     """Application environment types."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -12,6 +13,7 @@ class Environment(str, Enum):
 
 class LogLevel(str, Enum):
     """Logging levels."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"

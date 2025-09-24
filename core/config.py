@@ -1,34 +1,44 @@
 """Application configuration management."""
 
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     # Application
-    app_name: str = "Unstuck Backend"
-    debug: bool = False
-    version: str = "0.1.0"
-    
+    app_name: str = Field(default="Gaming Search Engine", description="Unstuck")
+    debug: bool = Field(default=False, description="Debug mode")
+    version: str = Field(default="0.1.0", description="Application version")
+
     # Server
-    host: str = "0.0.0.0"
-    port: int = 8000
-    
-    # Perplexity AI
-    perplexity_api_key: str | None = None
-    
-    # Security
-    secret_key: str | None = None
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-    
+    host: str = Field(default="0.0.0.0", description="Server host")
+    port: int = Field(default=8000, description="Server port")
+
+    # Perplexity AI (Required)
+    perplexity_api_key: str = Field(
+        ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
+    )
+
+    # Security (Optional)
+    secret_key: str | None = Field(
+        default=None, description="Secret key for JWT tokens", alias="SECRET_KEY"
+    )
+    algorithm: str = Field(default="HS256", description="JWT algorithm")
+    access_token_expire_minutes: int = Field(
+        default=30, description="JWT token expiration time in minutes"
+    )
+
     # CORS
-    allowed_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    allowed_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        description="CORS allowed origins",
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
+    )
 
 
 # Global settings instance
