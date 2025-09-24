@@ -21,15 +21,6 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
-    # Security (Optional)
-    secret_key: str | None = Field(
-        default=None, description="Secret key for JWT tokens", alias="SECRET_KEY"
-    )
-    algorithm: str = Field(default="HS256", description="JWT algorithm")
-    access_token_expire_minutes: int = Field(
-        default=30, description="JWT token expiration time in minutes"
-    )
-
     # CORS
     allowed_origins: list[str] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"],
