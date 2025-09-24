@@ -55,7 +55,13 @@ def main() -> None:
 
                 # Show sources if available
                 if response.search_results and len(response.search_results) > 0:
-                    print(f"\n📚 Sources: {len(response.search_results)} found")
+                    print(f"\n📚 Sources ({len(response.search_results)} found):")
+                    for i, source in enumerate(response.search_results, 1):
+                        print(f"  {i}. {source.title}")
+                        print(f"     🔗 {source.url}")
+                        if source.date:
+                            print(f"     📅 {source.date}")
+                        print()  # Empty line between sources
 
                 # Show conversation context
                 history = service.get_conversation_history(conversation_id)

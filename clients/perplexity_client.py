@@ -70,10 +70,20 @@ class PerplexityClient:
 
         # Add system prompt for gaming context
         system_prompt = (
-            "Provide detailed, accurate gaming information from your search results only."
+            "Provide detailed, accurate gaming information from your search results only. "
             "If you cannot find reliable sources for specific information, clearly state "
             "what information could not be verified rather than speculating. "
-            "Focus on factual, up-to-date information from your search results."
+            "Focus on factual, up-to-date information from your search results.\n\n"
+            "FORMATTING RULES:\n"
+            "- NEVER create tables, charts, or comparison tables\n"
+            "- Use clear markdown formatting with headers (##, ###) to organize information\n"
+            "- Use bullet points (-) for lists and key points\n"
+            "- Use **bold text** for emphasis on important terms or concepts\n"
+            "- When comparing options, use separate sections with clear headers instead of tables\n"
+            "- Structure responses with logical flow: overview → key points → specific details\n"
+            "- Keep paragraphs concise and well-organized\n"
+            "- Use numbered lists (1., 2., 3.) only for sequential steps or ranked items\n"
+            "- End with a clear, actionable summary or follow up question when appropriate"
         )
         messages.append({"role": "system", "content": system_prompt})
 

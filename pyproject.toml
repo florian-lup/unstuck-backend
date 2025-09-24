@@ -22,11 +22,13 @@ dependencies = [
 
 [tool.poetry]
 packages = [
+    {include = "app"},
     {include = "clients"},
     {include = "core"},
     {include = "schemas"},
     {include = "services"},
-    {include = "utils"}
+    {include = "utils"},
+    {include = "database"}
 ]
 
 [build-system]
