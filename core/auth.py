@@ -11,6 +11,12 @@ from jose import JWTError, jwt
 from core.config import settings
 from schemas.auth import AuthenticatedUser, AuthError, User
 
+# Module-level singletons to avoid B008 errors - defined early so they can be used in classes
+_http_bearer = HTTPBearer()
+_http_bearer_optional = HTTPBearer(auto_error=False)
+_http_bearer_depends = Depends(_http_bearer)
+_http_bearer_optional_depends = Depends(_http_bearer_optional)
+
 
 class Auth0JWTBearer(HTTPBearer):
     """Auth0 JWT Bearer token authentication."""
@@ -151,8 +157,8 @@ class Auth0JWTBearer(HTTPBearer):
             ) from e
 
     async def __call__(
-        self, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
-    ) -> User:  # noqa: B008
+        self, credentials: HTTPAuthorizationCredentials = _http_bearer_depends
+    ) -> User:
         """Validate JWT token and return user."""
         if not credentials:
             raise HTTPException(
@@ -197,12 +203,16 @@ async def get_current_user(user: User = Depends(auth0_jwt_bearer)) -> Authentica
     )
 
 
+# Create singleton for get_current_user dependency
+_get_current_user_depends = Depends(get_current_user)
+
+
 def require_permission(permission: str) -> Any:
     """Dependency to require specific permission."""
 
     def permission_checker(
-        user: AuthenticatedUser = Depends(get_current_user),
-    ) -> AuthenticatedUser:  # noqa: B008
+        user: AuthenticatedUser = _get_current_user_depends,
+    ) -> AuthenticatedUser:
         if permission not in user.permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -217,8 +227,8 @@ def require_any_permission(*permissions: str) -> Any:
     """Dependency to require any of the specified permissions."""
 
     def permission_checker(
-        user: AuthenticatedUser = Depends(get_current_user),
-    ) -> AuthenticatedUser:  # noqa: B008
+        user: AuthenticatedUser = _get_current_user_depends,
+    ) -> AuthenticatedUser:
         if not any(perm in user.permissions for perm in permissions):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -231,9 +241,7 @@ def require_any_permission(*permissions: str) -> Any:
 
 # Optional authentication - returns None if not authenticated
 async def get_optional_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(
-        HTTPBearer(auto_error=False)
-    ),  # noqa: B008
+    credentials: HTTPAuthorizationCredentials | None = _http_bearer_optional_depends,
 ) -> AuthenticatedUser | None:
     """Get current user if authenticated, None otherwise."""
     if not credentials:

@@ -81,3 +81,8 @@ X-RateLimit-Remaining: 95
 **That's the complete request/response!** 🎯
 
 **Key point:** JWT goes in `Authorization` header, **not** in the body.
+
+Keys Your Client Needs:
+Auth0 Domain - your-domain.auth0.com
+Auth0 Client ID - From your Auth0 dashboard
+Railway URL - Your deployed API endpoint

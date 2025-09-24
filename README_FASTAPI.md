@@ -47,7 +47,7 @@ A secure, production-ready FastAPI backend for the Gaming Search Engine with Aut
 
    ```bash
    # Development mode
-   poetry run python main_fastapi.py
+   poetry run python main.py
 
    # Or using uvicorn directly
    poetry run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload

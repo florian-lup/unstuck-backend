@@ -883,7 +883,7 @@ poetry install --no-dev
 # alembic upgrade head
 
 # Start production server
-poetry run python main_fastapi.py
+poetry run python main.py
 
 # Or use gunicorn for production
 poetry run gunicorn -w 4 -k uvicorn.workers.UvicornWorker api.app:app --bind 0.0.0.0:8000

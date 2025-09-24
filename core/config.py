@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # Server
     host: str = Field(default="0.0.0.0", description="Server host")
-    port: int = Field(default=8000, description="Server port")
+    port: int = Field(default=8000, description="Server port", alias="PORT")
 
     # Security
     secret_key: str = Field(
@@ -56,19 +56,23 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
-    # CORS - Updated for Electron app
+    # CORS - Updated for Electron app and Railway deployment
     allowed_origins: list[str] = Field(
         default=[
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
             "http://localhost:8080",
             "http://127.0.0.1:8080",
             "capacitor://localhost",
             "ionic://localhost",
             "http://localhost",
             "http://127.0.0.1",
+            "https://*.railway.app",
+            "https://*.up.railway.app",
         ],
-        description="CORS allowed origins - includes Electron app origins",
+        description="CORS allowed origins - includes Electron app origins and Railway domains",
     )
     allowed_methods: list[str] = Field(
         default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
