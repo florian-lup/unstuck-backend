@@ -4,7 +4,6 @@ import time
 from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 
 from core.config import settings
 from core.rate_limit import RateLimited
@@ -36,6 +35,7 @@ async def detailed_health_check(request: Request) -> dict[str, Any]:
     """
     if not settings.debug:
         from fastapi import HTTPException
+
         raise HTTPException(
             status_code=404,
             detail={"error": "not_found", "description": "Endpoint not available"},

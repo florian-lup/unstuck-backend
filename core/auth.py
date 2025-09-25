@@ -163,11 +163,12 @@ class Auth0JWTBearer(HTTPBearer):
 
 # Global instances
 auth0_jwt_bearer = Auth0JWTBearer()
+_auth0_jwt_bearer_depends = Depends(auth0_jwt_bearer)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(auth0_jwt_bearer)
-) -> AuthenticatedUser:  # noqa: B008
+    credentials: HTTPAuthorizationCredentials | None = _auth0_jwt_bearer_depends,
+) -> AuthenticatedUser:
     """Get current authenticated user."""
     if not credentials:
         raise HTTPException(
@@ -253,7 +254,7 @@ async def get_optional_user(
     try:
         auth_bearer = Auth0JWTBearer(auto_error=False)
         user = await auth_bearer.verify_token(credentials.credentials)
-        
+
         # Create AuthenticatedUser directly
         permissions = []
         if user.scope:
@@ -261,7 +262,7 @@ async def get_optional_user(
         if user.permissions:
             permissions.extend(user.permissions)
         permissions = list(dict.fromkeys(permissions))
-        
+
         return AuthenticatedUser(
             user_id=user.sub,
             email=user.email,
