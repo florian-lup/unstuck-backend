@@ -17,7 +17,7 @@ from services.gaming_search_service import gaming_search_service
 router = APIRouter()
 
 
-@router.post("/search", response_model=GamingSearchResponse)  # type: ignore[misc]
+@router.post("/search", response_model=GamingSearchResponse)
 async def gaming_search(
     request_data: GamingSearchRequest,
     request: Request,
@@ -51,7 +51,7 @@ async def gaming_search(
 @router.get(
     "/conversations/{conversation_id}/history",
     response_model=ConversationHistoryResponse,
-)  # type: ignore[misc]
+)
 async def get_conversation_history(
     conversation_id: UUID,
     request: Request,
@@ -99,7 +99,7 @@ async def get_conversation_history(
         ) from e
 
 
-@router.delete("/conversations/{conversation_id}")  # type: ignore[misc]
+@router.delete("/conversations/{conversation_id}")
 async def clear_conversation(
     conversation_id: UUID,
     request: Request,
@@ -142,7 +142,7 @@ async def clear_conversation(
         ) from e
 
 
-@router.get("/conversations")  # type: ignore[misc]
+@router.get("/conversations")
 async def list_conversations(
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -172,7 +172,7 @@ async def list_conversations(
 
 
 # Optional: Public search endpoint with different rate limits
-@router.post("/search/public", response_model=GamingSearchResponse)  # type: ignore[misc]
+@router.post("/search/public", response_model=GamingSearchResponse)
 async def public_gaming_search(
     request_data: GamingSearchRequest,
     request: Request,

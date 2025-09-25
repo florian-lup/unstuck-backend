@@ -45,7 +45,7 @@ def create_app() -> FastAPI:
     )
 
     # Security Headers Middleware
-    @app.middleware("http")  # type: ignore[misc]
+    @app.middleware("http")
     async def security_headers_middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -79,7 +79,7 @@ def create_app() -> FastAPI:
         return response
 
     # Request ID and timing middleware
-    @app.middleware("http")  # type: ignore[misc]
+    @app.middleware("http")
     async def request_middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -135,7 +135,7 @@ def create_app() -> FastAPI:
     # Rate limiting handled by Redis-based middleware in dependencies
 
     # Global exception handlers
-    @app.exception_handler(AuthError)  # type: ignore[misc]
+    @app.exception_handler(AuthError)
     async def auth_error_handler(request: Request, exc: AuthError) -> JSONResponse:
         """Handle authentication errors."""
         return JSONResponse(
@@ -148,7 +148,7 @@ def create_app() -> FastAPI:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    @app.exception_handler(ValueError)  # type: ignore[misc]
+    @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
         """Handle validation errors."""
         return JSONResponse(
@@ -160,7 +160,7 @@ def create_app() -> FastAPI:
             },
         )
 
-    @app.exception_handler(500)  # type: ignore[misc]
+    @app.exception_handler(500)
     async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:
         """Handle internal server errors."""
         return JSONResponse(

@@ -13,7 +13,7 @@ from schemas.auth import HealthResponse
 router = APIRouter()
 
 
-@router.get("/health", response_model=HealthResponse)  # type: ignore[misc]
+@router.get("/health", response_model=HealthResponse)
 async def health_check(_: RateLimited = None) -> HealthResponse:
     """
     Health check endpoint.
@@ -27,7 +27,7 @@ async def health_check(_: RateLimited = None) -> HealthResponse:
     )
 
 
-@router.get("/health/detailed")  # type: ignore[misc]
+@router.get("/health/detailed")
 async def detailed_health_check(request: Request) -> dict[str, Any]:
     """
     Detailed health check with system information.
@@ -35,9 +35,10 @@ async def detailed_health_check(request: Request) -> dict[str, Any]:
     Only available in debug mode.
     """
     if not settings.debug:
-        return JSONResponse(  # type: ignore[no-any-return]
+        from fastapi import HTTPException
+        raise HTTPException(
             status_code=404,
-            content={"error": "not_found", "description": "Endpoint not available"},
+            detail={"error": "not_found", "description": "Endpoint not available"},
         )
 
     return {
@@ -61,7 +62,7 @@ async def detailed_health_check(request: Request) -> dict[str, Any]:
     }
 
 
-@router.get("/health/ready")  # type: ignore[misc]
+@router.get("/health/ready")
 async def readiness_check(_: RateLimited = None) -> dict[str, str]:
     """
     Kubernetes/Docker readiness probe.
@@ -73,7 +74,7 @@ async def readiness_check(_: RateLimited = None) -> dict[str, str]:
     return {"status": "ready"}
 
 
-@router.get("/health/live")  # type: ignore[misc]
+@router.get("/health/live")
 async def liveness_check() -> dict[str, str]:
     """
     Kubernetes/Docker liveness probe.

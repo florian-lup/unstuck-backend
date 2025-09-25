@@ -12,7 +12,7 @@ from services.gaming_search_service import gaming_search_service
 router = APIRouter()
 
 
-@router.get("/me", response_model=UserInfoResponse)  # type: ignore[misc]
+@router.get("/me", response_model=UserInfoResponse)
 async def get_user_info(
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -34,7 +34,7 @@ async def get_user_info(
     )
 
 
-@router.post("/verify")  # type: ignore[misc]
+@router.post("/verify")
 async def verify_token(
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -52,7 +52,7 @@ async def verify_token(
     }
 
 
-@router.get("/permissions")  # type: ignore[misc]
+@router.get("/permissions")
 async def get_user_permissions(
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
     _: RateLimited = None,

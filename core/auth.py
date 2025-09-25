@@ -4,7 +4,7 @@ import time
 from typing import Any
 
 import httpx
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
@@ -156,33 +156,36 @@ class Auth0JWTBearer(HTTPBearer):
                 status_code=401,
             ) from e
 
-    async def __call__(
-        self, credentials: HTTPAuthorizationCredentials = _http_bearer_depends
-    ) -> User:
-        """Validate JWT token and return user."""
-        if not credentials:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Bearer token missing",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        try:
-            return await self.verify_token(credentials.credentials)
-        except AuthError as e:
-            raise HTTPException(
-                status_code=e.status_code,
-                detail={"error": e.error, "description": e.description},
-                headers={"WWW-Authenticate": "Bearer"},
-            ) from e
+    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
+        """Extract Bearer token from request - matches parent signature."""
+        return await super().__call__(request)
 
 
 # Global instances
 auth0_jwt_bearer = Auth0JWTBearer()
 
 
-async def get_current_user(user: User = Depends(auth0_jwt_bearer)) -> AuthenticatedUser:  # noqa: B008
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(auth0_jwt_bearer)
+) -> AuthenticatedUser:  # noqa: B008
     """Get current authenticated user."""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bearer token missing",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        # Verify the token using the auth0_jwt_bearer instance
+        user = await auth0_jwt_bearer.verify_token(credentials.credentials)
+    except AuthError as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail={"error": e.error, "description": e.description},
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+
     permissions = []
 
     # Extract permissions from scope or permissions claim
@@ -250,6 +253,20 @@ async def get_optional_user(
     try:
         auth_bearer = Auth0JWTBearer(auto_error=False)
         user = await auth_bearer.verify_token(credentials.credentials)
-        return await get_current_user(user)
+        
+        # Create AuthenticatedUser directly
+        permissions = []
+        if user.scope:
+            permissions.extend(user.scope.split())
+        if user.permissions:
+            permissions.extend(user.permissions)
+        permissions = list(dict.fromkeys(permissions))
+        
+        return AuthenticatedUser(
+            user_id=user.sub,
+            email=user.email,
+            name=user.name or user.nickname,
+            permissions=permissions,
+        )
     except (AuthError, HTTPException):
         return None
