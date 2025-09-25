@@ -51,7 +51,9 @@ class PerplexityClient:
     def gaming_search(
         self,
         query: str,
+        game: str,
         conversation_history: list[dict[str, Any]] | None = None,
+        version: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -59,7 +61,9 @@ class PerplexityClient:
 
         Args:
             query: The search query about gaming
+            game: The specific game name to provide context for (required)
             conversation_history: Previous messages in the conversation
+            version: The game version to provide context for (optional)
             **kwargs: Additional parameters
 
         Returns:
@@ -68,8 +72,27 @@ class PerplexityClient:
         # Build the message history
         messages = []
 
-        # Add system prompt for gaming context
-        system_prompt = (
+        # Build system prompt with game context
+        system_prompt_parts = []
+        
+        # Add game-specific context (game is always provided)
+        context_parts = [f"Game: {game}"]
+        if version:
+            context_parts.append(f"Version: {version}")
+        
+        game_context = (
+            f"GAME CONTEXT:\n"
+            f"{' | '.join(context_parts)}\n\n"
+            f"When answering questions, prioritize information specifically related to "
+            f"{game}{f' version {version}' if version else ''}. "
+            f"If information varies between versions, clearly specify which "
+            f"version the information applies to. Focus on the most current and "
+            f"accurate information for {'this specific version' if version else 'the latest version'}.\n\n"
+        )
+        system_prompt_parts.append(game_context)
+        
+        # Add main instructions
+        main_instructions = (
             "Provide detailed, accurate gaming information from your search results only. "
             "If you cannot find reliable sources for specific information, clearly state "
             "what information could not be verified rather than speculating. "
@@ -85,6 +108,9 @@ class PerplexityClient:
             "- Use numbered lists (1., 2., 3.) only for sequential steps or ranked items\n"
             "- End with a clear, actionable summary or follow up question when appropriate"
         )
+        system_prompt_parts.append(main_instructions)
+        
+        system_prompt = "".join(system_prompt_parts)
         messages.append({"role": "system", "content": system_prompt})
 
         # Add conversation history if provided

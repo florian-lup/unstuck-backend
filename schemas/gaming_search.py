@@ -19,6 +19,12 @@ class GamingSearchRequest(BaseModel):
     query: str = Field(
         ..., min_length=1, max_length=500, description="Gaming search query"
     )
+    game: str = Field(
+        ..., min_length=1, max_length=100, description="Game name to provide context"
+    )
+    version: str | None = Field(
+        default=None, max_length=50, description="Game version (optional)"
+    )
     conversation_id: UUID | None = Field(
         default=None, description="ID to track conversation across requests"
     )

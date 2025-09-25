@@ -114,7 +114,9 @@ class GamingSearchService:
             # Call Perplexity API
             response = perplexity_client.gaming_search(
                 query=request.query,
+                game=request.game,
                 conversation_history=conversation_history,
+                version=request.version,
             )
 
             # Store user message in conversation

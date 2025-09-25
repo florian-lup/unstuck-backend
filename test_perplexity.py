@@ -45,7 +45,9 @@ def main() -> None:
 
                 # Search with conversation context
                 request = GamingSearchRequest(
-                    query=query, conversation_id=conversation_id
+                    query=query, 
+                    game="World of Warcraft",  # Default game context for CLI
+                    conversation_id=conversation_id
                 )
 
                 response = service.search(request)
