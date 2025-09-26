@@ -56,6 +56,25 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
+    # Database Configuration (Neon PostgreSQL)
+    database_url: str = Field(
+        ..., 
+        description="Database connection URL for Neon PostgreSQL", 
+        alias="DATABASE_URL"
+    )
+    database_pool_size: int = Field(
+        default=20, 
+        description="Database connection pool size"
+    )
+    database_max_overflow: int = Field(
+        default=30, 
+        description="Database connection pool max overflow"
+    )
+    use_null_pool: bool = Field(
+        default=True, 
+        description="Use NullPool for serverless environments like Neon"
+    )
+
     # CORS - Updated for Electron app and Railway deployment
     allowed_origins: list[str] = Field(
         default=[

@@ -1,10 +1,14 @@
-"""Gaming search service with conversation management."""
+"""Gaming search service with database-backed conversation management."""
 
-import time
+import logging
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.perplexity_client import perplexity_client
+from database.models import Conversation
+from database.service import DatabaseService
 from schemas.gaming_search import (
     ConversationMessage,
     GamingSearchRequest,
@@ -13,104 +17,81 @@ from schemas.gaming_search import (
     UsageStats,
 )
 
-
-class ConversationManager:
-    """Manages gaming search conversations in memory."""
-
-    def __init__(self) -> None:
-        """Initialize the conversation manager."""
-        self._conversations: dict[UUID, list[ConversationMessage]] = {}
-        self._conversation_metadata: dict[UUID, dict[str, Any]] = {}
-
-    def create_conversation(self, conversation_id: UUID | None = None) -> UUID:
-        """Create a new conversation or return existing ID."""
-        if conversation_id is None:
-            conversation_id = uuid4()
-
-        if conversation_id not in self._conversations:
-            self._conversations[conversation_id] = []
-            self._conversation_metadata[conversation_id] = {
-                "created_at": int(time.time()),
-                "updated_at": int(time.time()),
-            }
-
-        return conversation_id
-
-    def add_message(self, conversation_id: UUID, role: str, content: str) -> None:
-        """Add a message to the conversation."""
-        if conversation_id not in self._conversations:
-            self.create_conversation(conversation_id)
-
-        message = ConversationMessage(role=role, content=content)
-        self._conversations[conversation_id].append(message)
-        self._conversation_metadata[conversation_id]["updated_at"] = int(time.time())
-
-    def get_conversation(self, conversation_id: UUID) -> list[ConversationMessage]:
-        """Get all messages from a conversation."""
-        return self._conversations.get(conversation_id, [])
-
-    def get_conversation_history(
-        self, conversation_id: UUID, include_system: bool = False
-    ) -> list[dict[str, Any]]:
-        """Get conversation history formatted for Perplexity API."""
-        messages = self.get_conversation(conversation_id)
-
-        if not include_system:
-            # Filter out system messages for API calls
-            messages = [msg for msg in messages if msg.role != "system"]
-
-        return [{"role": msg.role, "content": msg.content} for msg in messages]
-
-    def clear_conversation(self, conversation_id: UUID) -> bool:
-        """Clear a conversation."""
-        if conversation_id in self._conversations:
-            del self._conversations[conversation_id]
-            del self._conversation_metadata[conversation_id]
-            return True
-        return False
-
-    def list_conversations(self) -> list[UUID]:
-        """List all active conversation IDs."""
-        return list(self._conversations.keys())
+logger = logging.getLogger(__name__)
 
 
 class GamingSearchService:
-    """Service for handling gaming search requests with conversation management."""
+    """Service for handling gaming search requests with database-backed conversation management."""
 
-    def __init__(self) -> None:
-        """Initialize the gaming search service."""
-        self._conversation_manager = ConversationManager()
+    def __init__(self, db_session: AsyncSession):
+        """Initialize the gaming search service with database session."""
+        self.db_service = DatabaseService(db_session)
 
-    def search(self, request: GamingSearchRequest) -> GamingSearchResponse:
+    async def search(
+        self, 
+        request: GamingSearchRequest, 
+        user_id: UUID,
+        auth0_user_id: str
+    ) -> GamingSearchResponse:
         """
         Perform a gaming search with conversation context.
 
         Args:
             request: Gaming search request
+            user_id: User ID from Auth0 token (for security)
+            auth0_user_id: Auth0 user identifier
 
         Returns:
             Gaming search response
         """
-        # Create or get conversation
-        conversation_id = self._conversation_manager.create_conversation(
-            request.conversation_id
-        )
-
-        # Build conversation history for API
-        conversation_history = []
-        if request.conversation_history:
-            # Use provided history
-            conversation_history = [
-                {"role": msg.role, "content": msg.content}
-                for msg in request.conversation_history
-            ]
-        else:
-            # Use stored conversation history
-            conversation_history = self._conversation_manager.get_conversation_history(
-                conversation_id, include_system=False
-            )
-
         try:
+            # Ensure user exists in database
+            await self.db_service.get_or_create_user(auth0_user_id)
+
+            # Get or create conversation
+            conversation: Conversation
+            if request.conversation_id:
+                # Use existing conversation (verify user owns it)
+                existing_conversation = await self.db_service.get_conversation_with_messages(
+                    request.conversation_id, user_id, limit=50
+                )
+                if not existing_conversation:
+                    # User doesn't own this conversation, create new one
+                    logger.warning(f"User {user_id} attempted to access conversation {request.conversation_id} they don't own")
+                    conversation = await self.db_service.create_conversation(
+                        user_id=user_id,
+                        game_name=request.game,
+                        game_version=request.version
+                    )
+                else:
+                    conversation = existing_conversation
+            else:
+                # Create new conversation
+                conversation = await self.db_service.create_conversation(
+                    user_id=user_id,
+                    game_name=request.game,
+                    game_version=request.version
+                )
+
+            # Build conversation history for API
+            conversation_history = []
+            if request.conversation_history:
+                # Use provided history
+                conversation_history = [
+                    {"role": msg.role, "content": msg.content}
+                    for msg in request.conversation_history
+                ]
+            else:
+                # Use stored conversation history (exclude system messages)
+                messages = await self.db_service.get_conversation_messages(
+                    conversation.id, user_id, limit=50  # type: ignore[arg-type]
+                )
+                conversation_history = [
+                    {"role": msg.role, "content": msg.content}
+                    for msg in messages
+                    if msg.role != "system"
+                ]
+
             # Call Perplexity API
             response = perplexity_client.gaming_search(
                 query=request.query,
@@ -119,22 +100,13 @@ class GamingSearchService:
                 version=request.version,
             )
 
-            # Store user message in conversation
-            self._conversation_manager.add_message(
-                conversation_id, "user", request.query
-            )
-
             # Extract response data
             choice = response.choices[0]
             assistant_content = choice.message.content
 
-            # Store assistant response in conversation
-            self._conversation_manager.add_message(
-                conversation_id, "assistant", assistant_content
-            )
-
             # Parse search results
             search_results = []
+            search_results_data = None
             if hasattr(response, "search_results") and response.search_results:
                 search_results = [
                     SearchResult(
@@ -144,9 +116,19 @@ class GamingSearchService:
                     )
                     for result in response.search_results
                 ]
+                # Store search results as JSON for database
+                search_results_data = [
+                    {
+                        "title": result.title,
+                        "url": result.url,
+                        "date": getattr(result, "date", None),
+                    }
+                    for result in response.search_results
+                ]
 
             # Parse usage statistics
             usage_stats = None
+            usage_stats_data = None
             if hasattr(response, "usage") and response.usage:
                 usage_data = response.usage
                 usage_stats = UsageStats(
@@ -159,10 +141,41 @@ class GamingSearchService:
                     citation_tokens=getattr(usage_data, "citation_tokens", None),
                     num_search_queries=getattr(usage_data, "num_search_queries", None),
                 )
+                # Store usage stats as JSON for database
+                usage_stats_data = {
+                    "prompt_tokens": usage_data.prompt_tokens,
+                    "completion_tokens": usage_data.completion_tokens,
+                    "total_tokens": usage_data.total_tokens,
+                    "search_context_size": getattr(usage_data, "search_context_size", None),
+                    "citation_tokens": getattr(usage_data, "citation_tokens", None),
+                    "num_search_queries": getattr(usage_data, "num_search_queries", None),
+                }
+
+            # Store user message in database
+            await self.db_service.add_message(
+                conversation_id=conversation.id,  # type: ignore[arg-type]
+                user_id=user_id,
+                role="user",
+                content=request.query
+            )
+
+            # Store assistant response in database
+            await self.db_service.add_message(
+                conversation_id=conversation.id,  # type: ignore[arg-type]
+                user_id=user_id,
+                role="assistant",
+                content=assistant_content,
+                search_results=search_results_data,
+                usage_stats=usage_stats_data,
+                model_info={
+                    "model": response.model,
+                    "finish_reason": getattr(choice, "finish_reason", None)
+                }
+                )
 
             return GamingSearchResponse(
                 id=response.id,
-                conversation_id=conversation_id,
+                conversation_id=conversation.id,  # type: ignore[arg-type]
                 model=response.model,
                 created=response.created,
                 content=assistant_content,
@@ -172,24 +185,117 @@ class GamingSearchService:
             )
 
         except Exception as e:
-            # Log the error and re-raise
-            # In a production system, you'd want proper logging here
+            logger.error(f"Gaming search failed for user {user_id}: {e}")
             raise RuntimeError(f"Gaming search failed: {e!s}") from e
 
-    def get_conversation_history(
-        self, conversation_id: UUID
+    async def get_conversation_history(
+        self, 
+        conversation_id: UUID, 
+        user_id: UUID
     ) -> list[ConversationMessage]:
-        """Get conversation history."""
-        return self._conversation_manager.get_conversation(conversation_id)
+        """
+        Get conversation history.
+        
+        Args:
+            conversation_id: Conversation ID
+            user_id: User ID (for security)
+            
+        Returns:
+            list[ConversationMessage]: Conversation messages
+        """
+        return await self.db_service.get_conversation_messages(
+            conversation_id, user_id, limit=100
+        )
 
-    def clear_conversation(self, conversation_id: UUID) -> bool:
-        """Clear a conversation."""
-        return self._conversation_manager.clear_conversation(conversation_id)
+    async def get_user_conversations(
+        self, 
+        user_id: UUID, 
+        limit: int = 20
+    ) -> list[dict[str, Any]]:
+        """
+        Get user's conversations.
+        
+        Args:
+            user_id: User ID
+            limit: Maximum number of conversations to return
+            
+        Returns:
+            list[dict]: List of conversation summaries
+        """
+        conversations = await self.db_service.get_user_conversations(
+            user_id, limit=limit
+        )
+        
+        return [
+            {
+                "id": str(conv.id),
+                "title": conv.title,
+                "game_name": conv.game_name,
+                "game_version": conv.game_version,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+            }
+            for conv in conversations
+        ]
 
-    def list_conversations(self) -> list[UUID]:
-        """List all active conversations."""
-        return self._conversation_manager.list_conversations()
+    async def archive_conversation(
+        self, 
+        conversation_id: UUID, 
+        user_id: UUID
+    ) -> bool:
+        """
+        Archive a conversation.
+        
+        Args:
+            conversation_id: Conversation ID
+            user_id: User ID (for security)
+            
+        Returns:
+            bool: True if archived successfully
+        """
+        return await self.db_service.archive_conversation(conversation_id, user_id)
+
+    async def update_conversation_title(
+        self,
+        conversation_id: UUID,
+        user_id: UUID,
+        title: str
+    ) -> bool:
+        """
+        Update conversation title.
+        
+        Args:
+            conversation_id: Conversation ID
+            user_id: User ID (for security)
+            title: New title
+            
+        Returns:
+            bool: True if updated successfully
+        """
+        conversation = await self.db_service.update_conversation_title(
+            conversation_id, user_id, title
+        )
+        return conversation is not None
+
+    async def delete_conversation(
+        self,
+        conversation_id: UUID,
+        user_id: UUID
+    ) -> bool:
+        """
+        Permanently delete a conversation and all its messages.
+        
+        ⚠️ WARNING: This is irreversible!
+        
+        Args:
+            conversation_id: Conversation ID
+            user_id: User ID (for security)
+            
+        Returns:
+            bool: True if deleted successfully
+        """
+        return await self.db_service.delete_conversation(conversation_id, user_id)
 
 
-# Global service instance
-gaming_search_service = GamingSearchService()
+# Note: Service instances will now be created per request with database session
+# See updated routes for usage

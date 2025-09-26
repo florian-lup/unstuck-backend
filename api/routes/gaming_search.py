@@ -1,18 +1,21 @@
-"""Gaming search API routes with authentication."""
+"""Gaming search API routes with database-backed authentication."""
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.auth import get_current_user, get_optional_user
+from core.auth import get_current_user
 from core.rate_limit import RateLimited
+from database.connection import get_db_session
 from schemas.auth import AuthenticatedUser
 from schemas.gaming_search import (
     ConversationHistoryResponse,
     GamingSearchRequest,
     GamingSearchResponse,
 )
-from services.gaming_search_service import gaming_search_service
+from services.gaming_search_service import GamingSearchService
 
 router = APIRouter()
 
@@ -22,20 +25,29 @@ async def gaming_search(
     request_data: GamingSearchRequest,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
 ) -> GamingSearchResponse:
     """
-    Perform authenticated gaming search.
+    Perform authenticated gaming search with database persistence.
 
     Searches for gaming-related information using AI with conversation context.
+    All conversations and messages are stored securely in the database.
     Requires authentication via Auth0 JWT token.
     """
     try:
         # Store user ID in request state for rate limiting
         request.state.user_id = current_user.user_id
 
-        # Perform search using existing service
-        return gaming_search_service.search(request_data)
+        # Create service instance with database session
+        service = GamingSearchService(db_session)
+
+        # Perform search with user authentication
+        return await service.search(
+            request=request_data,
+            user_id=UUID(current_user.user_id),
+            auth0_user_id=current_user.user_id 
+        )
 
     except Exception as e:
         raise HTTPException(
@@ -43,6 +55,43 @@ async def gaming_search(
             detail={
                 "error": "search_failed",
                 "message": f"Gaming search failed: {str(e)}",
+                "request_id": getattr(request.state, "request_id", None),
+            },
+        ) from e
+
+
+@router.get("/conversations")
+async def list_conversations(
+    request: Request,
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    limit: int = 20,
+    _: RateLimited = None,
+) -> dict[str, Any]:
+    """
+    List all active conversations for the current user.
+
+    Returns list of conversation summaries with metadata.
+    """
+    try:
+        service = GamingSearchService(db_session)
+        
+        conversations = await service.get_user_conversations(
+            user_id=UUID(current_user.user_id),
+            limit=limit
+        )
+
+        return {
+            "conversations": conversations,
+            "total": len(conversations)
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "conversation_list_failed",
+                "message": f"Failed to list conversations: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
@@ -56,34 +105,38 @@ async def get_conversation_history(
     conversation_id: UUID,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
 ) -> ConversationHistoryResponse:
     """
     Get conversation history for a specific conversation.
 
     Returns all messages in the conversation with metadata.
+    Security: Users can only access conversations they own.
     """
     try:
-        # Get conversation history
-        messages = gaming_search_service.get_conversation_history(conversation_id)
+        service = GamingSearchService(db_session)
+        
+        # Get conversation messages (includes security check)
+        messages = await service.get_conversation_history(
+            conversation_id=conversation_id,
+            user_id=UUID(current_user.user_id)
+        )
 
         if not messages:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
                     "error": "conversation_not_found",
-                    "message": f"Conversation {conversation_id} not found",
+                    "message": f"Conversation {conversation_id} not found or access denied",
                 },
             )
 
-        # Get conversation metadata (you might want to store this in the service)
         return ConversationHistoryResponse(
             conversation_id=conversation_id,
             messages=messages,
             created_at=int(conversation_id.time),  # Use UUID timestamp as creation time
-            updated_at=int(
-                conversation_id.time
-            ),  # Simplified - you might want to track this properly
+            updated_at=int(conversation_id.time),  # Simplified for now
         )
 
     except HTTPException:
@@ -99,34 +152,54 @@ async def get_conversation_history(
         ) from e
 
 
-@router.delete("/conversations/{conversation_id}")
-async def clear_conversation(
+@router.put("/conversations/{conversation_id}/title")
+async def update_conversation_title(
     conversation_id: UUID,
+    title_data: dict[str, str],
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
-) -> dict[str, str | bool]:
+) -> dict[str, Any]:
     """
-    Clear/delete a conversation.
+    Update conversation title.
 
-    Removes all messages and metadata for the specified conversation.
+    Allows users to rename their conversations for better organization.
+    Security: Users can only update conversations they own.
     """
     try:
-        success = gaming_search_service.clear_conversation(conversation_id)
+        service = GamingSearchService(db_session)
+        
+        new_title = title_data.get("title", "").strip()
+        if not new_title or len(new_title) > 500:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "invalid_title",
+                    "message": "Title must be between 1 and 500 characters",
+                }
+            )
+
+        success = await service.update_conversation_title(
+            conversation_id=conversation_id,
+            user_id=UUID(current_user.user_id),
+            title=new_title
+        )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
                     "error": "conversation_not_found",
-                    "message": f"Conversation {conversation_id} not found",
+                    "message": f"Conversation {conversation_id} not found or access denied",
                 },
             )
 
         return {
             "success": True,
-            "message": f"Conversation {conversation_id} cleared successfully",
+            "message": "Conversation title updated successfully",
             "conversation_id": str(conversation_id),
+            "new_title": new_title
         }
 
     except HTTPException:
@@ -135,72 +208,115 @@ async def clear_conversation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "conversation_clear_failed",
-                "message": f"Failed to clear conversation: {str(e)}",
+                "error": "title_update_failed",
+                "message": f"Failed to update conversation title: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
 
 
-@router.get("/conversations")
-async def list_conversations(
+@router.post("/conversations/{conversation_id}/archive")
+async def archive_conversation(
+    conversation_id: UUID,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
-) -> dict[str, list[str]]:
+) -> dict[str, Any]:
     """
-    List all active conversations for the current user.
+    Archive a conversation.
 
-    Returns list of conversation IDs.
+    Archived conversations are hidden from the main list but not deleted.
+    Users can still access them if they have the conversation ID.
+    Security: Users can only archive conversations they own.
     """
     try:
-        conversations = gaming_search_service.list_conversations()
+        service = GamingSearchService(db_session)
+        
+        success = await service.archive_conversation(
+            conversation_id=conversation_id,
+            user_id=UUID(current_user.user_id)
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "conversation_not_found",
+                    "message": f"Conversation {conversation_id} not found or access denied",
+                },
+            )
 
         return {
-            "conversations": [str(conv_id) for conv_id in conversations],
+            "success": True,
+            "message": "Conversation archived successfully",
+            "conversation_id": str(conversation_id)
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "conversation_list_failed",
-                "message": f"Failed to list conversations: {str(e)}",
+                "error": "archive_failed",
+                "message": f"Failed to archive conversation: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
 
 
-# Optional: Public search endpoint with different rate limits
-@router.post("/search/public", response_model=GamingSearchResponse)
-async def public_gaming_search(
-    request_data: GamingSearchRequest,
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: UUID,
     request: Request,
-    current_user: AuthenticatedUser | None = Depends(get_optional_user),  # noqa: B008
-) -> GamingSearchResponse:
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    _: RateLimited = None,
+) -> dict[str, Any]:
     """
-    Public gaming search endpoint with optional authentication.
+    Permanently delete a conversation and all its messages.
 
-    Allows unauthenticated users to perform searches with stricter rate limits.
-    Authenticated users get higher rate limits and conversation persistence.
+    ⚠️ WARNING: This action is irreversible! 
+    
+    All messages in the conversation will be permanently deleted from the database.
+    Consider using the archive endpoint if you want to hide the conversation instead.
+    
+    Security: Users can only delete conversations they own.
+    GDPR Compliance: Allows users to permanently remove their data.
     """
     try:
-        # Apply different rate limits for authenticated vs unauthenticated users
-        if current_user:
-            request.state.user_id = current_user.user_id
+        service = GamingSearchService(db_session)
+        
+        success = await service.delete_conversation(
+            conversation_id=conversation_id,
+            user_id=UUID(current_user.user_id)
+        )
 
-        # For unauthenticated users, don't persist conversations
-        if not current_user:
-            request_data.conversation_id = None
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "conversation_not_found",
+                    "message": f"Conversation {conversation_id} not found or access denied",
+                },
+            )
 
-        return gaming_search_service.search(request_data)
+        return {
+            "success": True,
+            "message": "Conversation and all messages permanently deleted",
+            "conversation_id": str(conversation_id),
+            "warning": "This action was irreversible"
+        }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "search_failed",
-                "message": f"Gaming search failed: {str(e)}",
+                "error": "delete_failed",
+                "message": f"Failed to delete conversation: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e

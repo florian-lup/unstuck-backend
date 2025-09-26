@@ -3,10 +3,12 @@
 import time
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
 from core.rate_limit import RateLimited
+from database.connection import check_database_health, get_db_session
 from schemas.auth import HealthResponse
 
 router = APIRouter()
@@ -63,15 +65,35 @@ async def detailed_health_check(request: Request) -> dict[str, Any]:
 
 
 @router.get("/health/ready")
-async def readiness_check(_: RateLimited = None) -> dict[str, str]:
+async def readiness_check(
+    _: RateLimited = None,
+    db_session: AsyncSession = Depends(get_db_session)  # noqa: B008
+) -> dict[str, Any]:
     """
     Kubernetes/Docker readiness probe.
 
     Returns 200 when the service is ready to accept traffic.
+    Includes database connectivity check.
     """
-    # Add any dependency checks here (database, Redis, etc.)
-    # For now, just return ready
-    return {"status": "ready"}
+    # Check database health
+    db_health = await check_database_health()
+    
+    if db_health["status"] != "healthy":
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "not_ready",
+                "database": db_health,
+                "message": "Database is not available"
+            }
+        )
+    
+    return {
+        "status": "ready",
+        "database": db_health,
+        "timestamp": int(time.time())
+    }
 
 
 @router.get("/health/live")
