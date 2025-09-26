@@ -1,6 +1,6 @@
 """Gaming search API routes with database-backed authentication."""
 
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user
 from core.rate_limit import RateLimited
 from database.connection import get_db_session
+from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser
 from schemas.gaming_search import (
     ConversationHistoryResponse,
@@ -39,13 +40,21 @@ async def gaming_search(
         # Store user ID in request state for rate limiting
         request.state.user_id = current_user.user_id
 
+        # Get internal user record (creates if doesn't exist)
+        db_service = DatabaseService(db_session)
+        internal_user = await db_service.get_or_create_user(
+            auth0_user_id=current_user.user_id,
+            email=current_user.email,
+            username=current_user.name,
+        )
+
         # Create service instance with database session
         service = GamingSearchService(db_session)
 
         # Perform search with user authentication
         return await service.search(
             request=request_data,
-            user_id=UUID(current_user.user_id),
+            user_id=cast(UUID, internal_user.id),
             auth0_user_id=current_user.user_id,
         )
 
@@ -74,10 +83,18 @@ async def list_conversations(
     Returns list of conversation summaries with metadata.
     """
     try:
+        # Get internal user record (creates if doesn't exist)
+        db_service = DatabaseService(db_session)
+        internal_user = await db_service.get_or_create_user(
+            auth0_user_id=current_user.user_id,
+            email=current_user.email,
+            username=current_user.name,
+        )
+        
         service = GamingSearchService(db_session)
 
         conversations = await service.get_user_conversations(
-            user_id=UUID(current_user.user_id), limit=limit
+            user_id=cast(UUID, internal_user.id), limit=limit
         )
 
         return {"conversations": conversations, "total": len(conversations)}
@@ -111,11 +128,19 @@ async def get_conversation_history(
     Security: Users can only access conversations they own.
     """
     try:
+        # Get internal user record (creates if doesn't exist)
+        db_service = DatabaseService(db_session)
+        internal_user = await db_service.get_or_create_user(
+            auth0_user_id=current_user.user_id,
+            email=current_user.email,
+            username=current_user.name,
+        )
+        
         service = GamingSearchService(db_session)
 
         # Get conversation messages (includes security check)
         messages = await service.get_conversation_history(
-            conversation_id=conversation_id, user_id=UUID(current_user.user_id)
+            conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
         )
 
         if not messages:
@@ -175,9 +200,17 @@ async def update_conversation_title(
                 },
             )
 
+        # Get internal user record (creates if doesn't exist)
+        db_service = DatabaseService(db_session)
+        internal_user = await db_service.get_or_create_user(
+            auth0_user_id=current_user.user_id,
+            email=current_user.email,
+            username=current_user.name,
+        )
+        
         success = await service.update_conversation_title(
             conversation_id=conversation_id,
-            user_id=UUID(current_user.user_id),
+            user_id=cast(UUID, internal_user.id),
             title=new_title,
         )
 
@@ -226,10 +259,18 @@ async def archive_conversation(
     Security: Users can only archive conversations they own.
     """
     try:
+        # Get internal user record (creates if doesn't exist)
+        db_service = DatabaseService(db_session)
+        internal_user = await db_service.get_or_create_user(
+            auth0_user_id=current_user.user_id,
+            email=current_user.email,
+            username=current_user.name,
+        )
+        
         service = GamingSearchService(db_session)
 
         success = await service.archive_conversation(
-            conversation_id=conversation_id, user_id=UUID(current_user.user_id)
+            conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
         )
 
         if not success:
@@ -280,10 +321,18 @@ async def delete_conversation(
     GDPR Compliance: Allows users to permanently remove their data.
     """
     try:
+        # Get internal user record (creates if doesn't exist)
+        db_service = DatabaseService(db_session)
+        internal_user = await db_service.get_or_create_user(
+            auth0_user_id=current_user.user_id,
+            email=current_user.email,
+            username=current_user.name,
+        )
+        
         service = GamingSearchService(db_session)
 
         success = await service.delete_conversation(
-            conversation_id=conversation_id, user_id=UUID(current_user.user_id)
+            conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
         )
 
         if not success:

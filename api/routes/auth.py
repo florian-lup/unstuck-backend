@@ -1,6 +1,7 @@
 """Authentication and user management routes."""
 
 import time
+from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user
 from core.rate_limit import RateLimited
 from database.connection import get_db_session
+from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser, UserInfoResponse
 from services.gaming_search_service import GamingSearchService
 
@@ -27,10 +29,18 @@ async def get_user_info(
 
     Returns user details and usage statistics.
     """
+    # Get internal user record (creates if doesn't exist)
+    db_service = DatabaseService(db_session)
+    internal_user = await db_service.get_or_create_user(
+        auth0_user_id=current_user.user_id,
+        email=current_user.email,
+        username=current_user.name,
+    )
+    
     # Get user's conversation count
     service = GamingSearchService(db_session)
     conversations = await service.get_user_conversations(
-        user_id=UUID(current_user.user_id),
+        user_id=cast(UUID, internal_user.id),
         limit=1000,  # Get all for count
     )
     conversation_count = len(conversations)
