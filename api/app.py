@@ -22,8 +22,7 @@ async def lifespan(app: FastAPI) -> Any:
     """Application lifespan context manager."""
     # Startup
     print(f"🚀 Starting {settings.app_name} v{settings.version}")
-    print(f"🔒 Auth0 Domain: {settings.auth0_domain}")
-    print(f"🎯 API Audience: {settings.auth0_api_audience}")
+    print("🔒 Authentication configured")
 
     # Initialize database
     try:

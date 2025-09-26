@@ -85,7 +85,7 @@ def main() -> None:
 
     except Exception as e:
         print(f"❌ Error: {e}")
-        print("💡 Make sure PERPLEXITY_API_KEY is in your .env file")
+        print("💡 Make sure API key is configured in your .env file")
         return
 
     print("\nThanks for using Gaming Search! 🎮👋")

@@ -66,11 +66,11 @@ class DatabaseService:
             self.db.add(user)
             await self.db.commit()
             await self.db.refresh(user)
-            logger.info(f"Created new user: {auth0_user_id}")
+            logger.info("Created new user")
             return user
 
         except Exception as e:
-            logger.error(f"Error getting/creating user {auth0_user_id}: {e}")
+            logger.error(f"Error getting/creating user: {e}")
             await self.db.rollback()
             raise
 
@@ -101,7 +101,7 @@ class DatabaseService:
             return user
 
         except Exception as e:
-            logger.error(f"Error updating user preferences {user_id}: {e}")
+            logger.error(f"Error updating user preferences: {e}")
             await self.db.rollback()
             raise
 
@@ -140,11 +140,11 @@ class DatabaseService:
             await self.db.commit()
             await self.db.refresh(conversation)
 
-            logger.info(f"Created conversation {conversation.id} for user {user_id}")
+            logger.info(f"Created conversation {conversation.id}")
             return conversation
 
         except Exception as e:
-            logger.error(f"Error creating conversation for user {user_id}: {e}")
+            logger.error(f"Error creating conversation: {e}")
             await self.db.rollback()
             raise
 
@@ -187,7 +187,7 @@ class DatabaseService:
             return list(conversations)
 
         except Exception as e:
-            logger.error(f"Error getting conversations for user {user_id}: {e}")
+            logger.error(f"Error getting conversations: {e}")
             raise
 
     async def get_conversation_with_messages(
@@ -225,7 +225,7 @@ class DatabaseService:
 
         except Exception as e:
             logger.error(
-                f"Error getting conversation {conversation_id} for user {user_id}: {e}"
+                f"Error getting conversation {conversation_id}: {e}"
             )
             raise
 
@@ -309,7 +309,7 @@ class DatabaseService:
 
             if not conversation:
                 logger.warning(
-                    f"User {user_id} attempted to add message to conversation {conversation_id} they don't own"
+                    "Attempted to add message to conversation not owned by user"
                 )
                 return None
 
@@ -459,7 +459,7 @@ class DatabaseService:
                 await self.db.commit()
 
                 logger.info(
-                    f"User {user_id} permanently deleted conversation {conversation_id}"
+                    f"Conversation {conversation_id} permanently deleted"
                 )
                 return True
 

@@ -57,7 +57,7 @@ class GamingSearchService:
                 if not existing_conversation:
                     # User doesn't own this conversation, create new one
                     logger.warning(
-                        f"User {user_id} attempted to access conversation {request.conversation_id} they don't own"
+                        "User attempted to access conversation they don't own"
                     )
                     conversation = await self.db_service.create_conversation(
                         user_id=user_id,
@@ -192,7 +192,7 @@ class GamingSearchService:
             )
 
         except Exception as e:
-            logger.error(f"Gaming search failed for user {user_id}: {e}")
+            logger.error(f"Gaming search failed: {e}")
             raise RuntimeError(f"Gaming search failed: {e!s}") from e
 
     async def get_conversation_history(
