@@ -31,7 +31,7 @@ async def get_user_info(
     service = GamingSearchService(db_session)
     conversations = await service.get_user_conversations(
         user_id=UUID(current_user.user_id),
-        limit=1000  # Get all for count
+        limit=1000,  # Get all for count
     )
     conversation_count = len(conversations)
 

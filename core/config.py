@@ -58,21 +58,18 @@ class Settings(BaseSettings):
 
     # Database Configuration (Neon PostgreSQL)
     database_url: str = Field(
-        ..., 
-        description="Database connection URL for Neon PostgreSQL", 
-        alias="DATABASE_URL"
+        ...,
+        description="Database connection URL for Neon PostgreSQL",
+        alias="DATABASE_URL",
     )
     database_pool_size: int = Field(
-        default=20, 
-        description="Database connection pool size"
+        default=20, description="Database connection pool size"
     )
     database_max_overflow: int = Field(
-        default=30, 
-        description="Database connection pool max overflow"
+        default=30, description="Database connection pool max overflow"
     )
     use_null_pool: bool = Field(
-        default=True, 
-        description="Use NullPool for serverless environments like Neon"
+        default=True, description="Use NullPool for serverless environments like Neon"
     )
 
     # CORS - Updated for Electron app and Railway deployment

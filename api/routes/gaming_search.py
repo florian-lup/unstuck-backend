@@ -46,7 +46,7 @@ async def gaming_search(
         return await service.search(
             request=request_data,
             user_id=UUID(current_user.user_id),
-            auth0_user_id=current_user.user_id 
+            auth0_user_id=current_user.user_id,
         )
 
     except Exception as e:
@@ -75,16 +75,12 @@ async def list_conversations(
     """
     try:
         service = GamingSearchService(db_session)
-        
+
         conversations = await service.get_user_conversations(
-            user_id=UUID(current_user.user_id),
-            limit=limit
+            user_id=UUID(current_user.user_id), limit=limit
         )
 
-        return {
-            "conversations": conversations,
-            "total": len(conversations)
-        }
+        return {"conversations": conversations, "total": len(conversations)}
 
     except Exception as e:
         raise HTTPException(
@@ -116,11 +112,10 @@ async def get_conversation_history(
     """
     try:
         service = GamingSearchService(db_session)
-        
+
         # Get conversation messages (includes security check)
         messages = await service.get_conversation_history(
-            conversation_id=conversation_id,
-            user_id=UUID(current_user.user_id)
+            conversation_id=conversation_id, user_id=UUID(current_user.user_id)
         )
 
         if not messages:
@@ -169,7 +164,7 @@ async def update_conversation_title(
     """
     try:
         service = GamingSearchService(db_session)
-        
+
         new_title = title_data.get("title", "").strip()
         if not new_title or len(new_title) > 500:
             raise HTTPException(
@@ -177,13 +172,13 @@ async def update_conversation_title(
                 detail={
                     "error": "invalid_title",
                     "message": "Title must be between 1 and 500 characters",
-                }
+                },
             )
 
         success = await service.update_conversation_title(
             conversation_id=conversation_id,
             user_id=UUID(current_user.user_id),
-            title=new_title
+            title=new_title,
         )
 
         if not success:
@@ -199,7 +194,7 @@ async def update_conversation_title(
             "success": True,
             "message": "Conversation title updated successfully",
             "conversation_id": str(conversation_id),
-            "new_title": new_title
+            "new_title": new_title,
         }
 
     except HTTPException:
@@ -232,10 +227,9 @@ async def archive_conversation(
     """
     try:
         service = GamingSearchService(db_session)
-        
+
         success = await service.archive_conversation(
-            conversation_id=conversation_id,
-            user_id=UUID(current_user.user_id)
+            conversation_id=conversation_id, user_id=UUID(current_user.user_id)
         )
 
         if not success:
@@ -250,7 +244,7 @@ async def archive_conversation(
         return {
             "success": True,
             "message": "Conversation archived successfully",
-            "conversation_id": str(conversation_id)
+            "conversation_id": str(conversation_id),
         }
 
     except HTTPException:
@@ -277,20 +271,19 @@ async def delete_conversation(
     """
     Permanently delete a conversation and all its messages.
 
-    ⚠️ WARNING: This action is irreversible! 
-    
+    ⚠️ WARNING: This action is irreversible!
+
     All messages in the conversation will be permanently deleted from the database.
     Consider using the archive endpoint if you want to hide the conversation instead.
-    
+
     Security: Users can only delete conversations they own.
     GDPR Compliance: Allows users to permanently remove their data.
     """
     try:
         service = GamingSearchService(db_session)
-        
+
         success = await service.delete_conversation(
-            conversation_id=conversation_id,
-            user_id=UUID(current_user.user_id)
+            conversation_id=conversation_id, user_id=UUID(current_user.user_id)
         )
 
         if not success:
@@ -306,7 +299,7 @@ async def delete_conversation(
             "success": True,
             "message": "Conversation and all messages permanently deleted",
             "conversation_id": str(conversation_id),
-            "warning": "This action was irreversible"
+            "warning": "This action was irreversible",
         }
 
     except HTTPException:

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Gaming Search Engine - Conversational AI for Gaming."""
 
-
 # NOTE: This CLI test needs to be updated to work with the new database-backed service
 # For now, use the FastAPI endpoints for testing
 print("❌ This CLI test is outdated. Please use the FastAPI endpoints for testing.")
 print("💡 Run: poetry run python main.py")
 print("💡 Then test with: curl http://localhost:8000/api/v1/health")
 
+
 def main() -> None:
-    """Main conversational gaming search.""" 
+    """Main conversational gaming search."""
     print("🎮 This test needs database setup and has been disabled.")
     print("🔧 Use the FastAPI application instead.")
-    
+
     # OLD CODE - DISABLED FOR NOW
     # Uncomment and update after setting up database
     """

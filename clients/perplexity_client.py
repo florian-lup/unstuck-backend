@@ -74,12 +74,12 @@ class PerplexityClient:
 
         # Build system prompt with game context
         system_prompt_parts = []
-        
+
         # Add game-specific context (game is always provided)
         context_parts = [f"Game: {game}"]
         if version:
             context_parts.append(f"Version: {version}")
-        
+
         game_context = (
             f"GAME CONTEXT:\n"
             f"{' | '.join(context_parts)}\n\n"
@@ -90,7 +90,7 @@ class PerplexityClient:
             f"accurate information for {'this specific version' if version else 'the latest version'}.\n\n"
         )
         system_prompt_parts.append(game_context)
-        
+
         # Add main instructions
         main_instructions = (
             "Provide detailed, accurate gaming information from your search results only. "
@@ -109,7 +109,7 @@ class PerplexityClient:
             "- End with a clear, actionable summary or follow up question when appropriate"
         )
         system_prompt_parts.append(main_instructions)
-        
+
         system_prompt = "".join(system_prompt_parts)
         messages.append({"role": "system", "content": system_prompt})
 

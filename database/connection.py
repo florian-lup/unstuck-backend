@@ -13,31 +13,80 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 # Database engine with security and performance optimizations
-engine = create_async_engine(
-    settings.database_url,
+use_null_pool = getattr(settings, "use_null_pool", True)
+
+# Convert database URL to use async driver if needed
+database_url = settings.database_url
+
+# Remove asyncpg-incompatible query parameters
+if "sslmode=" in database_url or "channel_binding=" in database_url:
+    from urllib.parse import parse_qs, urlparse, urlunparse
+
+    parsed = urlparse(database_url)
+    query_params = parse_qs(parsed.query)
+
+    # Remove asyncpg-incompatible parameters
+    query_params.pop("sslmode", None)
+    query_params.pop("channel_binding", None)
+
+    # Rebuild the query string
+    new_query = "&".join([f"{k}={v[0]}" for k, v in query_params.items()])
+
+    # Rebuild the URL without incompatible parameters
+    database_url = urlunparse(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            parsed.params,
+            new_query,
+            parsed.fragment,
+        )
+    )
+    logger.info("Removed asyncpg-incompatible SSL parameters from database URL")
+
+if database_url.startswith("postgresql://"):
+    # Convert to asyncpg for async support
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    logger.info("Converted database URL to use asyncpg driver for async support")
+elif database_url.startswith("postgres://"):
+    # Handle postgres:// URLs (sometimes used by cloud providers)
+    database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    logger.info("Converted postgres:// URL to postgresql+asyncpg:// for async support")
+
+# Prepare engine arguments
+engine_kwargs = {
     # Security settings
-    echo=settings.debug,  # Only log SQL queries in debug mode
-    echo_pool=settings.debug,  # Only log pool events in debug mode
-    
-    # Connection pool settings for production performance
-    pool_size=getattr(settings, 'database_pool_size', 20),
-    max_overflow=getattr(settings, 'database_max_overflow', 30),
-    pool_timeout=30,  # Timeout for getting connection from pool
-    pool_recycle=3600,  # Recycle connections every hour
-    pool_pre_ping=True,  # Verify connections before use
-    
-    # Use NullPool for serverless environments like Neon (cloud database)
-    poolclass=NullPool if getattr(settings, 'use_null_pool', True) else None,
-    
+    "echo": settings.debug,  # Only log SQL queries in debug mode
+    "echo_pool": settings.debug,  # Only log pool events in debug mode
     # Connection arguments for cloud database (Neon)
-    connect_args={
-        "sslmode": "require",  # Always use SSL for secure cloud connections
-        "application_name": "unstuck-gaming-chat",  # For connection monitoring
+    "connect_args": {
+        # For asyncpg, SSL is enabled by default for cloud databases
+        # We can specify additional connection settings here if needed
+        "command_timeout": 60,  # Timeout for commands
         "server_settings": {
-            "timezone": "UTC"  # Always use UTC for consistency
+            "timezone": "UTC",  # Always use UTC for consistency
+            "application_name": "unstuck-gaming-chat",  # For connection monitoring
+        },
+    },
+}
+
+# Only add pool settings if not using NullPool
+if use_null_pool:
+    engine_kwargs["poolclass"] = NullPool
+else:
+    # Connection pool settings for production performance (only when not using NullPool)
+    engine_kwargs.update(
+        {
+            "pool_size": getattr(settings, "database_pool_size", 20),
+            "max_overflow": getattr(settings, "database_max_overflow", 30),
+            "pool_timeout": 30,  # Timeout for getting connection from pool
+            "pool_recycle": 3600,  # Recycle connections every hour
+            "pool_pre_ping": True,  # Verify connections before use
         }
-    }
-)
+    )
+
+engine = create_async_engine(database_url, **engine_kwargs)
 
 # Async session factory
 async_session = async_sessionmaker(
@@ -49,7 +98,7 @@ async_session = async_sessionmaker(
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency for getting database sessions.
-    
+
     This ensures proper session lifecycle management:
     - Session is created for each request
     - Session is automatically closed after request
@@ -69,7 +118,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 async def init_database() -> None:
     """
     Initialize the database.
-    
+
     This should be called on application startup to:
     - Test database connectivity
     - Create tables if they don't exist (in development)
@@ -78,7 +127,7 @@ async def init_database() -> None:
     try:
         # Import models to ensure they're registered
         from database.models import Base
-        
+
         # Test connection
         async with engine.begin() as conn:
             # In production, you should use Alembic migrations instead
@@ -89,7 +138,7 @@ async def init_database() -> None:
                 # In production, just test the connection
                 await conn.execute(text("SELECT 1"))
                 logger.info("Database connection verified")
-                
+
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
@@ -98,7 +147,7 @@ async def init_database() -> None:
 async def close_database() -> None:
     """
     Close database connections.
-    
+
     This should be called on application shutdown.
     """
     await engine.dispose()
@@ -109,7 +158,7 @@ async def close_database() -> None:
 async def check_database_health() -> dict[str, str]:
     """
     Check database health for monitoring endpoints.
-    
+
     Returns:
         dict: Database health status
     """

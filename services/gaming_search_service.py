@@ -28,10 +28,7 @@ class GamingSearchService:
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, 
-        request: GamingSearchRequest, 
-        user_id: UUID,
-        auth0_user_id: str
+        self, request: GamingSearchRequest, user_id: UUID, auth0_user_id: str
     ) -> GamingSearchResponse:
         """
         Perform a gaming search with conversation context.
@@ -52,16 +49,20 @@ class GamingSearchService:
             conversation: Conversation
             if request.conversation_id:
                 # Use existing conversation (verify user owns it)
-                existing_conversation = await self.db_service.get_conversation_with_messages(
-                    request.conversation_id, user_id, limit=50
+                existing_conversation = (
+                    await self.db_service.get_conversation_with_messages(
+                        request.conversation_id, user_id, limit=50
+                    )
                 )
                 if not existing_conversation:
                     # User doesn't own this conversation, create new one
-                    logger.warning(f"User {user_id} attempted to access conversation {request.conversation_id} they don't own")
+                    logger.warning(
+                        f"User {user_id} attempted to access conversation {request.conversation_id} they don't own"
+                    )
                     conversation = await self.db_service.create_conversation(
                         user_id=user_id,
                         game_name=request.game,
-                        game_version=request.version
+                        game_version=request.version,
                     )
                 else:
                     conversation = existing_conversation
@@ -70,7 +71,7 @@ class GamingSearchService:
                 conversation = await self.db_service.create_conversation(
                     user_id=user_id,
                     game_name=request.game,
-                    game_version=request.version
+                    game_version=request.version,
                 )
 
             # Build conversation history for API
@@ -84,7 +85,9 @@ class GamingSearchService:
             else:
                 # Use stored conversation history (exclude system messages)
                 messages = await self.db_service.get_conversation_messages(
-                    conversation.id, user_id, limit=50  # type: ignore[arg-type]
+                    conversation.id,
+                    user_id,
+                    limit=50,  # type: ignore[arg-type]
                 )
                 conversation_history = [
                     {"role": msg.role, "content": msg.content}
@@ -146,9 +149,13 @@ class GamingSearchService:
                     "prompt_tokens": usage_data.prompt_tokens,
                     "completion_tokens": usage_data.completion_tokens,
                     "total_tokens": usage_data.total_tokens,
-                    "search_context_size": getattr(usage_data, "search_context_size", None),
+                    "search_context_size": getattr(
+                        usage_data, "search_context_size", None
+                    ),
                     "citation_tokens": getattr(usage_data, "citation_tokens", None),
-                    "num_search_queries": getattr(usage_data, "num_search_queries", None),
+                    "num_search_queries": getattr(
+                        usage_data, "num_search_queries", None
+                    ),
                 }
 
             # Store user message in database
@@ -156,7 +163,7 @@ class GamingSearchService:
                 conversation_id=conversation.id,  # type: ignore[arg-type]
                 user_id=user_id,
                 role="user",
-                content=request.query
+                content=request.query,
             )
 
             # Store assistant response in database
@@ -169,9 +176,9 @@ class GamingSearchService:
                 usage_stats=usage_stats_data,
                 model_info={
                     "model": response.model,
-                    "finish_reason": getattr(choice, "finish_reason", None)
-                }
-                )
+                    "finish_reason": getattr(choice, "finish_reason", None),
+                },
+            )
 
             return GamingSearchResponse(
                 id=response.id,
@@ -189,17 +196,15 @@ class GamingSearchService:
             raise RuntimeError(f"Gaming search failed: {e!s}") from e
 
     async def get_conversation_history(
-        self, 
-        conversation_id: UUID, 
-        user_id: UUID
+        self, conversation_id: UUID, user_id: UUID
     ) -> list[ConversationMessage]:
         """
         Get conversation history.
-        
+
         Args:
             conversation_id: Conversation ID
             user_id: User ID (for security)
-            
+
         Returns:
             list[ConversationMessage]: Conversation messages
         """
@@ -208,24 +213,22 @@ class GamingSearchService:
         )
 
     async def get_user_conversations(
-        self, 
-        user_id: UUID, 
-        limit: int = 20
+        self, user_id: UUID, limit: int = 20
     ) -> list[dict[str, Any]]:
         """
         Get user's conversations.
-        
+
         Args:
             user_id: User ID
             limit: Maximum number of conversations to return
-            
+
         Returns:
             list[dict]: List of conversation summaries
         """
         conversations = await self.db_service.get_user_conversations(
             user_id, limit=limit
         )
-        
+
         return [
             {
                 "id": str(conv.id),
@@ -238,37 +241,30 @@ class GamingSearchService:
             for conv in conversations
         ]
 
-    async def archive_conversation(
-        self, 
-        conversation_id: UUID, 
-        user_id: UUID
-    ) -> bool:
+    async def archive_conversation(self, conversation_id: UUID, user_id: UUID) -> bool:
         """
         Archive a conversation.
-        
+
         Args:
             conversation_id: Conversation ID
             user_id: User ID (for security)
-            
+
         Returns:
             bool: True if archived successfully
         """
         return await self.db_service.archive_conversation(conversation_id, user_id)
 
     async def update_conversation_title(
-        self,
-        conversation_id: UUID,
-        user_id: UUID,
-        title: str
+        self, conversation_id: UUID, user_id: UUID, title: str
     ) -> bool:
         """
         Update conversation title.
-        
+
         Args:
             conversation_id: Conversation ID
             user_id: User ID (for security)
             title: New title
-            
+
         Returns:
             bool: True if updated successfully
         """
@@ -277,20 +273,16 @@ class GamingSearchService:
         )
         return conversation is not None
 
-    async def delete_conversation(
-        self,
-        conversation_id: UUID,
-        user_id: UUID
-    ) -> bool:
+    async def delete_conversation(self, conversation_id: UUID, user_id: UUID) -> bool:
         """
         Permanently delete a conversation and all its messages.
-        
+
         ⚠️ WARNING: This is irreversible!
-        
+
         Args:
             conversation_id: Conversation ID
             user_id: User ID (for security)
-            
+
         Returns:
             bool: True if deleted successfully
         """

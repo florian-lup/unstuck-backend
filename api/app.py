@@ -24,10 +24,11 @@ async def lifespan(app: FastAPI) -> Any:
     print(f"🚀 Starting {settings.app_name} v{settings.version}")
     print(f"🔒 Auth0 Domain: {settings.auth0_domain}")
     print(f"🎯 API Audience: {settings.auth0_api_audience}")
-    
+
     # Initialize database
     try:
         from database.connection import init_database
+
         await init_database()
         print("✅ Database initialized successfully")
     except Exception as e:
@@ -39,11 +40,12 @@ async def lifespan(app: FastAPI) -> Any:
     # Shutdown
     try:
         from database.connection import close_database
+
         await close_database()
         print("✅ Database connections closed")
     except Exception as e:
         print(f"⚠️ Error closing database: {e}")
-    
+
     print("🛑 Application shutdown complete")
 
 

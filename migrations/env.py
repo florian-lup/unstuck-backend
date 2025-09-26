@@ -20,7 +20,14 @@ if config.config_file_name is not None:
 # Set the database URL from application settings
 # This uses the same pydantic settings that load .env automatically
 if not config.get_main_option("sqlalchemy.url"):
-    config.set_main_option("sqlalchemy.url", settings.database_url)
+    # Convert async URL back to synchronous for Alembic (which uses sync drivers)
+    database_url = settings.database_url
+    if database_url.startswith("postgresql+asyncpg://"):
+        database_url = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    elif database_url.startswith("postgres+asyncpg://"):
+        database_url = database_url.replace("postgres+asyncpg://", "postgres://", 1)
+
+    config.set_main_option("sqlalchemy.url", database_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -70,9 +77,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
