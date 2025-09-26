@@ -1,7 +1,7 @@
 """Gaming search service with database-backed conversation management."""
 
 import logging
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,11 +83,11 @@ class GamingSearchService:
                     for msg in request.conversation_history
                 ]
             else:
-                # Use stored conversation history (exclude system messages)
+                # Use stored conversation history (exclude system messages)  
                 messages = await self.db_service.get_conversation_messages(
-                    conversation.id,
+                    cast(UUID, conversation.id),  # Cast Column[UUID] to UUID for mypy
                     user_id,
-                    limit=50,  # type: ignore[arg-type]
+                    limit=50,
                 )
                 conversation_history = [
                     {"role": msg.role, "content": msg.content}
@@ -160,7 +160,7 @@ class GamingSearchService:
 
             # Store user message in database
             await self.db_service.add_message(
-                conversation_id=conversation.id,  # type: ignore[arg-type]
+                conversation_id=cast(UUID, conversation.id),
                 user_id=user_id,
                 role="user",
                 content=request.query,
@@ -168,7 +168,7 @@ class GamingSearchService:
 
             # Store assistant response in database
             await self.db_service.add_message(
-                conversation_id=conversation.id,  # type: ignore[arg-type]
+                conversation_id=cast(UUID, conversation.id),
                 user_id=user_id,
                 role="assistant",
                 content=assistant_content,
@@ -182,7 +182,7 @@ class GamingSearchService:
 
             return GamingSearchResponse(
                 id=response.id,
-                conversation_id=conversation.id,  # type: ignore[arg-type]
+                conversation_id=cast(UUID, conversation.id),
                 model=response.model,
                 created=response.created,
                 content=assistant_content,
