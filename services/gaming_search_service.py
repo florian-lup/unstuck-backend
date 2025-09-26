@@ -63,6 +63,7 @@ class GamingSearchService:
                         user_id=user_id,
                         game_name=request.game,
                         game_version=request.version,
+                        user_query=request.query,
                     )
                 else:
                     conversation = existing_conversation
@@ -72,6 +73,7 @@ class GamingSearchService:
                     user_id=user_id,
                     game_name=request.game,
                     game_version=request.version,
+                    user_query=request.query,
                 )
 
             # Build conversation history for API
