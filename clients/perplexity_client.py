@@ -129,6 +129,35 @@ class PerplexityClient:
             **kwargs,
         )
 
+    def search(
+        self,
+        query: str | list[str],
+        max_results: int = 10,
+        max_tokens_per_page: int = 1024,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Perform a web search using Perplexity Search API.
+
+        Args:
+            query: Search query or list of queries for multi-query search
+            max_results: Maximum number of results to return (default: 10)
+            max_tokens_per_page: Content extraction limit per page (default: 1024)
+            **kwargs: Additional parameters for the API
+
+        Returns:
+            Search results response
+        """
+        search_params = {
+            "query": query,
+            "max_results": max_results,
+            "max_tokens_per_page": max_tokens_per_page,
+            **kwargs,
+        }
+
+        return self._client.search.create(**search_params)
+
+
 
 # Global client instance
 perplexity_client = PerplexityClient()
