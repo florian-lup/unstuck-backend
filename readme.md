@@ -1,6 +1,6 @@
-# Gaming Search Engine
+# Gaming Chat Engine
 
-An AI-powered gaming search engine built with Perplexity AI. This tool allows users to search for gaming information using natural language queries with conversation context.
+An AI-powered Gaming Chat engine built with Perplexity AI. This tool allows users to search for gaming information using natural language queries with conversation context.
 
 ## Features
 
@@ -32,7 +32,7 @@ unstuck-backend/
 │   ├── exceptions.py            # Custom exceptions
 │   └── __init__.py
 ├── main.py                      # Application entry point
-├── test_gaming_chat.py       # Gaming search testing interface
+├── test_gaming_chat.py       # Gaming Chat testing interface
 ├── test_setup.py               # Setup validation script
 ├── pyproject.toml              # Poetry configuration
 └── .env.example                # Environment variables template
@@ -84,7 +84,7 @@ unstuck-backend/
    poetry run python main.py
    ```
 
-2. **Gaming search testing:**
+2. **Gaming Chat testing:**
 
    ```bash
    # Single query test

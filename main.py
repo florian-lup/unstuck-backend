@@ -1,4 +1,4 @@
-"""FastAPI Gaming Search Engine - Production Entry Point."""
+"""FastAPI Gaming Chat Engine - Production Entry Point."""
 
 import uvicorn
 

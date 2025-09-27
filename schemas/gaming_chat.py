@@ -1,4 +1,4 @@
-"""Gaming search schemas for request/response validation."""
+"""Gaming Chat schemas for request/response validation."""
 
 from typing import Any
 from uuid import UUID, uuid4
@@ -14,10 +14,10 @@ class ConversationMessage(BaseModel):
 
 
 class GamingChatRequest(BaseModel):
-    """Request schema for gaming search queries."""
+    """Request schema for Gaming Chat queries."""
 
     query: str = Field(
-        ..., min_length=1, max_length=500, description="Gaming search query"
+        ..., min_length=1, max_length=500, description="Gaming Chat query"
     )
     game: str = Field(
         ..., min_length=1, max_length=100, description="Game name to provide context"
@@ -62,7 +62,7 @@ class UsageStats(BaseModel):
 
 
 class GamingChatResponse(BaseModel):
-    """Response schema for gaming search queries."""
+    """Response schema for Gaming Chat queries."""
 
     id: str = Field(..., description="Unique response ID")
     conversation_id: UUID = Field(

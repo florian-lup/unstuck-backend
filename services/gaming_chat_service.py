@@ -1,4 +1,4 @@
-"""Gaming search service with database-backed conversation management."""
+"""Gaming Chat service with database-backed conversation management."""
 
 import logging
 from typing import Any, cast
@@ -21,25 +21,25 @@ logger = logging.getLogger(__name__)
 
 
 class GamingChatService:
-    """Service for handling gaming search requests with database-backed conversation management."""
+    """Service for handling Gaming Chat requests with database-backed conversation management."""
 
     def __init__(self, db_session: AsyncSession):
-        """Initialize the gaming search service with database session."""
+        """Initialize the Gaming Chat service with database session."""
         self.db_service = DatabaseService(db_session)
 
     async def search(
         self, request: GamingChatRequest, user_id: UUID, auth0_user_id: str
     ) -> GamingChatResponse:
         """
-        Perform a gaming search with conversation context.
+        Perform a Gaming Chat with conversation context.
 
         Args:
-            request: Gaming search request
+            request: Gaming Chat request
             user_id: User ID from Auth0 token (for security)
             auth0_user_id: Auth0 user identifier
 
         Returns:
-            Gaming search response
+            Gaming Chat response
         """
         try:
             # Ensure user exists in database
@@ -194,8 +194,8 @@ class GamingChatService:
             )
 
         except Exception as e:
-            logger.error(f"Gaming search failed: {e}")
-            raise RuntimeError(f"Gaming search failed: {e!s}") from e
+            logger.error(f"Gaming Chat failed: {e}")
+            raise RuntimeError(f"Gaming Chat failed: {e!s}") from e
 
     async def get_conversation_history(
         self, conversation_id: UUID, user_id: UUID

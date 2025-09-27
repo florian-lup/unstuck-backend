@@ -1,4 +1,4 @@
-"""Gaming search API routes with database-backed authentication."""
+"""Gaming Chat API routes with database-backed authentication."""
 
 from typing import Any, cast
 from uuid import UUID
@@ -30,7 +30,7 @@ async def gaming_chat(
     _: RateLimited = None,
 ) -> GamingChatResponse:
     """
-    Perform authenticated gaming search with database persistence.
+    Perform authenticated Gaming Chat with database persistence.
 
     Searches for gaming-related information using AI with conversation context.
     All conversations and messages are stored securely in the database.
@@ -63,7 +63,7 @@ async def gaming_chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "error": "search_failed",
-                "message": f"Gaming search failed: {str(e)}",
+                "message": f"Gaming Chat failed: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e

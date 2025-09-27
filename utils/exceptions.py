@@ -1,8 +1,8 @@
-"""Custom exception classes for the gaming search API."""
+"""Custom exception classes for the Gaming Chat API."""
 
 
 class GamingSearchError(Exception):
-    """Base exception for gaming search operations."""
+    """Base exception for Gaming Chat operations."""
 
     def __init__(self, message: str, error_code: str | None = None) -> None:
         super().__init__(message)

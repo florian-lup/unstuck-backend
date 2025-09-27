@@ -53,7 +53,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.app_name,
-        description="A conversational AI gaming search engine with Auth0 authentication",
+        description="A conversational AI Gaming Chat engine with Auth0 authentication",
         version=settings.version,
         docs_url="/docs" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
@@ -195,7 +195,7 @@ def create_app() -> FastAPI:
         auth_routes.router, prefix="/api/v1/auth", tags=["Authentication"]
     )
     app.include_router(
-        gaming_routes.router, prefix="/api/v1/gaming", tags=["Gaming Search"]
+        gaming_routes.router, prefix="/api/v1/chat", tags=["Gaming Chat"]
     )
 
     return app

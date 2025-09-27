@@ -1,1 +1,1 @@
-"""API package for gaming search engine."""
+"""API package for Gaming Chat engine."""
