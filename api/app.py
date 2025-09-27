@@ -195,7 +195,7 @@ def create_app() -> FastAPI:
         auth_routes.router, prefix="/api/v1/auth", tags=["Authentication"]
     )
     app.include_router(
-        gaming_routes.router, prefix="/api/v1/chat", tags=["Gaming Chat"]
+        gaming_routes.router, prefix="/api/v1/gaming", tags=["Gaming Chat"]
     )
 
     return app

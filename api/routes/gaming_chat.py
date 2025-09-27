@@ -21,7 +21,7 @@ from services.gaming_chat_service import GamingChatService
 router = APIRouter()
 
 
-@router.post("/search", response_model=GamingChatResponse)
+@router.post("/chat", response_model=GamingChatResponse)
 async def gaming_chat(
     request_data: GamingChatRequest,
     request: Request,
