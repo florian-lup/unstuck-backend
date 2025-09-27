@@ -13,7 +13,7 @@ class ConversationMessage(BaseModel):
     content: str = Field(..., description="Message content")
 
 
-class GamingSearchRequest(BaseModel):
+class GamingChatRequest(BaseModel):
     """Request schema for gaming search queries."""
 
     query: str = Field(
@@ -61,7 +61,7 @@ class UsageStats(BaseModel):
     )
 
 
-class GamingSearchResponse(BaseModel):
+class GamingChatResponse(BaseModel):
     """Response schema for gaming search queries."""
 
     id: str = Field(..., description="Unique response ID")

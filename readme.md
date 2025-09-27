@@ -23,16 +23,16 @@ unstuck-backend/
 │   ├── constants.py             # Application constants
 │   └── exceptions.py            # Core exceptions
 ├── schemas/
-│   ├── gaming_search.py         # Request/response schemas
+│   ├── gaming_chat.py         # Request/response schemas
 │   └── __init__.py
 ├── services/
-│   ├── gaming_search_service.py # Business logic and conversation management
+│   ├── gaming_chat_service.py # Business logic and conversation management
 │   └── __init__.py
 ├── utils/
 │   ├── exceptions.py            # Custom exceptions
 │   └── __init__.py
 ├── main.py                      # Application entry point
-├── test_gaming_search.py       # Gaming search testing interface
+├── test_gaming_chat.py       # Gaming search testing interface
 ├── test_setup.py               # Setup validation script
 ├── pyproject.toml              # Poetry configuration
 └── .env.example                # Environment variables template
@@ -88,16 +88,16 @@ unstuck-backend/
 
    ```bash
    # Single query test
-   poetry run python test_gaming_search.py "What are the best RPG games of 2024?"
+   poetry run python test_gaming_chat.py "What are the best RPG games of 2024?"
 
    # Interactive mode with conversation context
-   poetry run python test_gaming_search.py --interactive
+   poetry run python test_gaming_chat.py --interactive
 
    # Test conversation context with predefined queries
-   poetry run python test_gaming_search.py --conversation
+   poetry run python test_gaming_chat.py --conversation
 
    # Show help and options
-   poetry run python test_gaming_search.py --help
+   poetry run python test_gaming_chat.py --help
    ```
 
 3. **Validate setup:**
@@ -111,15 +111,15 @@ unstuck-backend/
 
 ```bash
 # Test specific gaming questions
-poetry run python test_gaming_search.py "What are the best indie games of 2024?"
-poetry run python test_gaming_search.py "Compare PS5 vs Xbox Series X performance"
-poetry run python test_gaming_search.py "Tell me about Elden Ring gameplay mechanics"
+poetry run python test_gaming_chat.py "What are the best indie games of 2024?"
+poetry run python test_gaming_chat.py "Compare PS5 vs Xbox Series X performance"
+poetry run python test_gaming_chat.py "Tell me about Elden Ring gameplay mechanics"
 ```
 
 ### Interactive Testing Mode
 
 ```bash
-poetry run python test_gaming_search.py --interactive
+poetry run python test_gaming_chat.py --interactive
 
 # Then ask questions interactively with conversation context:
 🎮 Ask a gaming question (or 'quit'): Tell me about Elden Ring
@@ -132,7 +132,7 @@ poetry run python test_gaming_search.py --interactive
 
 ```bash
 # Test predefined conversation flow to verify context works
-poetry run python test_gaming_search.py --conversation
+poetry run python test_gaming_chat.py --conversation
 ```
 
 ## Features
@@ -210,7 +210,7 @@ poetry run mypy .
 ### Application Files
 
 - **`main.py`** - Clean application entry point and status
-- **`test_gaming_search.py`** - Comprehensive testing interface with multiple modes
+- **`test_gaming_chat.py`** - Comprehensive testing interface with multiple modes
 - **`test_setup.py`** - Setup validation and configuration testing
 
 ### Core Architecture
@@ -247,7 +247,7 @@ MIT License - see LICENSE file for details.
 
 For questions and support:
 
-- Check the application help: `python test_gaming_search.py --help`
+- Check the application help: `python test_gaming_chat.py --help`
 - Validate your setup: `python test_setup.py`
 - Review the [Perplexity AI docs](https://docs.perplexity.ai/)
 - Open an issue on GitHub

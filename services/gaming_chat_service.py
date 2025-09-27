@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from clients.perplexity_client import perplexity_client
 from database.models import Conversation
 from database.service import DatabaseService
-from schemas.gaming_search import (
+from schemas.gaming_chat import (
     ConversationMessage,
-    GamingSearchRequest,
-    GamingSearchResponse,
+    GamingChatRequest,
+    GamingChatResponse,
     SearchResult,
     UsageStats,
 )
@@ -20,7 +20,7 @@ from schemas.gaming_search import (
 logger = logging.getLogger(__name__)
 
 
-class GamingSearchService:
+class GamingChatService:
     """Service for handling gaming search requests with database-backed conversation management."""
 
     def __init__(self, db_session: AsyncSession):
@@ -28,8 +28,8 @@ class GamingSearchService:
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingSearchRequest, user_id: UUID, auth0_user_id: str
-    ) -> GamingSearchResponse:
+        self, request: GamingChatRequest, user_id: UUID, auth0_user_id: str
+    ) -> GamingChatResponse:
         """
         Perform a gaming search with conversation context.
 
@@ -85,7 +85,7 @@ class GamingSearchService:
                     for msg in request.conversation_history
                 ]
             else:
-                # Use stored conversation history (exclude system messages)  
+                # Use stored conversation history (exclude system messages)
                 messages = await self.db_service.get_conversation_messages(
                     cast(UUID, conversation.id),  # Cast Column[UUID] to UUID for mypy
                     user_id,
@@ -98,7 +98,7 @@ class GamingSearchService:
                 ]
 
             # Call Perplexity API
-            response = perplexity_client.gaming_search(
+            response = perplexity_client.gaming_chat(
                 query=request.query,
                 game=request.game,
                 conversation_history=conversation_history,
@@ -182,7 +182,7 @@ class GamingSearchService:
                 },
             )
 
-            return GamingSearchResponse(
+            return GamingChatResponse(
                 id=response.id,
                 conversation_id=cast(UUID, conversation.id),
                 model=response.model,

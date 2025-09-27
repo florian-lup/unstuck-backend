@@ -11,24 +11,24 @@ from core.rate_limit import RateLimited
 from database.connection import get_db_session
 from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser
-from schemas.gaming_search import (
+from schemas.gaming_chat import (
     ConversationHistoryResponse,
-    GamingSearchRequest,
-    GamingSearchResponse,
+    GamingChatRequest,
+    GamingChatResponse,
 )
-from services.gaming_search_service import GamingSearchService
+from services.gaming_chat_service import GamingChatService
 
 router = APIRouter()
 
 
-@router.post("/search", response_model=GamingSearchResponse)
-async def gaming_search(
-    request_data: GamingSearchRequest,
+@router.post("/search", response_model=GamingChatResponse)
+async def gaming_chat(
+    request_data: GamingChatRequest,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
     db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
-) -> GamingSearchResponse:
+) -> GamingChatResponse:
     """
     Perform authenticated gaming search with database persistence.
 
@@ -49,7 +49,7 @@ async def gaming_search(
         )
 
         # Create service instance with database session
-        service = GamingSearchService(db_session)
+        service = GamingChatService(db_session)
 
         # Perform search with user authentication
         return await service.search(
@@ -90,8 +90,8 @@ async def list_conversations(
             email=current_user.email,
             username=current_user.name,
         )
-        
-        service = GamingSearchService(db_session)
+
+        service = GamingChatService(db_session)
 
         conversations = await service.get_user_conversations(
             user_id=cast(UUID, internal_user.id), limit=limit
@@ -135,8 +135,8 @@ async def get_conversation_history(
             email=current_user.email,
             username=current_user.name,
         )
-        
-        service = GamingSearchService(db_session)
+
+        service = GamingChatService(db_session)
 
         # Get conversation messages (includes security check)
         messages = await service.get_conversation_history(
@@ -188,7 +188,7 @@ async def update_conversation_title(
     Security: Users can only update conversations they own.
     """
     try:
-        service = GamingSearchService(db_session)
+        service = GamingChatService(db_session)
 
         new_title = title_data.get("title", "").strip()
         if not new_title or len(new_title) > 500:
@@ -207,7 +207,7 @@ async def update_conversation_title(
             email=current_user.email,
             username=current_user.name,
         )
-        
+
         success = await service.update_conversation_title(
             conversation_id=conversation_id,
             user_id=cast(UUID, internal_user.id),
@@ -266,8 +266,8 @@ async def archive_conversation(
             email=current_user.email,
             username=current_user.name,
         )
-        
-        service = GamingSearchService(db_session)
+
+        service = GamingChatService(db_session)
 
         success = await service.archive_conversation(
             conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
@@ -328,8 +328,8 @@ async def delete_conversation(
             email=current_user.email,
             username=current_user.name,
         )
-        
-        service = GamingSearchService(db_session)
+
+        service = GamingChatService(db_session)
 
         success = await service.delete_conversation(
             conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)

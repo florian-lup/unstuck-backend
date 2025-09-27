@@ -48,7 +48,7 @@ class PerplexityClient:
 
         return self._client.chat.completions.create(**params)
 
-    def gaming_search(
+    def gaming_chat(
         self,
         query: str,
         game: str,

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database.models import Conversation, Message, User
-from schemas.gaming_search import ConversationMessage
+from schemas.gaming_chat import ConversationMessage
 
 logger = logging.getLogger(__name__)
 
@@ -106,45 +106,58 @@ class DatabaseService:
             raise
 
     # ==================== CONVERSATION MANAGEMENT ====================
-    
-    def generate_title_from_query(self, query: str, game: str, max_length: int = 60) -> str:
+
+    def generate_title_from_query(
+        self, query: str, game: str, max_length: int = 60
+    ) -> str:
         """
         Generate a meaningful conversation title from the user's query.
-        
+
         Args:
             query: User's search query
             game: Game name
             max_length: Maximum title length
-            
+
         Returns:
             str: Generated title
         """
         # Remove common question words and clean up
         cleaned = query.lower().strip()
-        
+
         # Remove common question starters
         question_starters = [
-            "what's", "what is", "what are", "what do",
-            "how do i", "how to", "how can i", "how do you",
-            "can you", "could you", "please", "help me",
-            "i need help", "tell me", "explain"
+            "what's",
+            "what is",
+            "what are",
+            "what do",
+            "how do i",
+            "how to",
+            "how can i",
+            "how do you",
+            "can you",
+            "could you",
+            "please",
+            "help me",
+            "i need help",
+            "tell me",
+            "explain",
         ]
-        
+
         for starter in question_starters:
             if cleaned.startswith(starter):
-                cleaned = cleaned[len(starter):].strip()
+                cleaned = cleaned[len(starter) :].strip()
                 break
-        
+
         # Remove question marks and extra spaces
         cleaned = cleaned.replace("?", "").replace("  ", " ").strip()
-        
+
         # Capitalize first letter of each word (title case)
         title = " ".join(word.capitalize() for word in cleaned.split())
-        
+
         # Truncate if too long
         if len(title) > max_length:
-            title = title[:max_length-3] + "..."
-        
+            title = title[: max_length - 3] + "..."
+
         # Return the generated title or fallback
         return title if title else f"{game} Chat"
 
@@ -178,7 +191,7 @@ class DatabaseService:
                 generated_title = self.generate_title_from_query(user_query, game_name)
             elif not generated_title:
                 generated_title = f"{game_name} Chat"
-            
+
             conversation = Conversation(
                 user_id=user_id,
                 game_name=game_name,
@@ -274,9 +287,7 @@ class DatabaseService:
             return result.scalar_one_or_none()
 
         except Exception as e:
-            logger.error(
-                f"Error getting conversation {conversation_id}: {e}"
-            )
+            logger.error(f"Error getting conversation {conversation_id}: {e}")
             raise
 
     async def update_conversation_title(
@@ -508,9 +519,7 @@ class DatabaseService:
                 await self.db.delete(conversation)
                 await self.db.commit()
 
-                logger.info(
-                    f"Conversation {conversation_id} permanently deleted"
-                )
+                logger.info(f"Conversation {conversation_id} permanently deleted")
                 return True
 
             return False

@@ -12,7 +12,7 @@ from core.rate_limit import RateLimited
 from database.connection import get_db_session
 from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser, UserInfoResponse
-from services.gaming_search_service import GamingSearchService
+from services.gaming_chat_service import GamingChatService
 
 router = APIRouter()
 
@@ -36,9 +36,9 @@ async def get_user_info(
         email=current_user.email,
         username=current_user.name,
     )
-    
+
     # Get user's conversation count
-    service = GamingSearchService(db_session)
+    service = GamingChatService(db_session)
     conversations = await service.get_user_conversations(
         user_id=cast(UUID, internal_user.id),
         limit=1000,  # Get all for count

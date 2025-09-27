@@ -1,12 +1,12 @@
 """Schemas package for request/response validation."""
 
-from .gaming_search import (
+from .gaming_chat import (
     ConversationHistoryRequest,
     ConversationHistoryResponse,
     ConversationMessage,
     ErrorResponse,
-    GamingSearchRequest,
-    GamingSearchResponse,
+    GamingChatRequest,
+    GamingChatResponse,
     SearchResult,
     UsageStats,
 )
@@ -16,8 +16,8 @@ __all__ = [
     "ConversationHistoryResponse",
     "ConversationMessage",
     "ErrorResponse",
-    "GamingSearchRequest",
-    "GamingSearchResponse",
+    "GamingChatRequest",
+    "GamingChatResponse",
     "SearchResult",
     "UsageStats",
 ]

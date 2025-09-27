@@ -13,9 +13,9 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 # Suppress SQLAlchemy engine logging to reduce terminal clutter
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
-logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
-logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.dialects").setLevel(logging.WARNING)
 
 # Database engine with security and performance optimizations
 use_null_pool = getattr(settings, "use_null_pool", True)

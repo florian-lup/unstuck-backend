@@ -11,7 +11,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from api.routes import auth as auth_routes
-from api.routes import gaming_search as gaming_routes
+from api.routes import gaming_chat as gaming_routes
 from api.routes import health as health_routes
 from core.config import settings
 from schemas.auth import AuthError

@@ -1,5 +1,5 @@
 """Services package for business logic."""
 
-from .gaming_search_service import GamingSearchService
+from .gaming_chat_service import GamingChatService
 
-__all__ = ["GamingSearchService"]
+__all__ = ["GamingChatService"]
