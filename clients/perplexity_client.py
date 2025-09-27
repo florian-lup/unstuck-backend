@@ -81,13 +81,16 @@ class PerplexityClient:
             context_parts.append(f"Version: {version}")
 
         game_context = (
-            f"GAME CONTEXT:\n"
+            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
             f"{' | '.join(context_parts)}\n\n"
-            f"When answering questions, prioritize information specifically related to "
-            f"{game}{f' version {version}' if version else ''}. "
-            f"If information varies between versions, clearly specify which "
-            f"version the information applies to. Focus on the most current and "
-            f"accurate information for {'this specific version' if version else 'the latest version'}.\n\n"
+            f"CRITICAL INSTRUCTIONS:\n"
+            f"- You MUST ONLY search and provide information about {game}{f' version {version}' if version else ''}\n"
+            f"- IGNORE all results about other games\n"
+            f"- If no {game} information is found, explicitly state 'No {game} information found'\n"
+            f"- DO NOT provide information about any other game, even if more results exist\n"
+            f"- When searching, focus specifically on {game} content only\n\n"
+            f"GAME SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''}.\n"
+            f"All answers must be relevant to this specific game only.\n\n"
         )
         system_prompt_parts.append(game_context)
 
@@ -117,8 +120,9 @@ class PerplexityClient:
         if conversation_history:
             messages.extend(conversation_history)
 
-        # Add the current user query
-        messages.append({"role": "user", "content": query})
+        # Add the current user query with game context reinforcement
+        enhanced_query = f"In {game}{f' version {version}' if version else ''}: {query}"
+        messages.append({"role": "user", "content": enhanced_query})
 
         return self.chat_completion(
             messages=messages,
