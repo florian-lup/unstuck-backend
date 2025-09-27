@@ -12,6 +12,11 @@ from core.config import settings
 # Set up logging
 logger = logging.getLogger(__name__)
 
+# Suppress SQLAlchemy engine logging to reduce terminal clutter
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
+
 # Database engine with security and performance optimizations
 use_null_pool = getattr(settings, "use_null_pool", True)
 
@@ -57,8 +62,8 @@ elif database_url.startswith("postgres://"):
 # Prepare engine arguments
 engine_kwargs = {
     # Security settings
-    "echo": settings.debug,  # Only log SQL queries in debug mode
-    "echo_pool": settings.debug,  # Only log pool events in debug mode
+    "echo": False,  # Disable SQL query logging to reduce terminal clutter
+    "echo_pool": False,  # Disable pool event logging to reduce terminal clutter
     # Connection arguments for cloud database (Neon)
     "connect_args": {
         # For asyncpg, SSL is enabled by default for cloud databases
