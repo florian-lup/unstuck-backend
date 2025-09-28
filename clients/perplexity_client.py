@@ -77,8 +77,6 @@ class PerplexityClient:
 
         # Add game-specific context (game is always provided)
         context_parts = [f"Game: {game}"]
-        if version:
-            context_parts.append(f"Version: {version}")
 
         game_context = (
             f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
@@ -172,37 +170,32 @@ class PerplexityClient:
             f"{' | '.join(context_parts)}\n\n"
             f"CRITICAL INSTRUCTIONS:\n"
             f"- Write the response as you would narrate a tale\n"
-            f"- You MUST ONLY search and provide lore information about {game}{f' version {version}' if version else ''}\n"
+            f"- You MUST ONLY search and provide lore information about {game}\n"
             f"- IGNORE all results about other games\n"
             f"- If no {game} lore information is found, explicitly state 'No {game} lore information found'\n"
             f"- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} lore, story, characters, world-building content only\n\n"
-            f"LORE SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} lore and storytelling.\n"
+            f"LORE SCOPE: This query is EXCLUSIVELY about {game} lore and storytelling.\n"
             f"All answers must be relevant to this specific game's lore only.\n\n"
         )
         system_prompt_parts.append(game_context)
 
         # Add lore-specific instructions
         lore_instructions = (
-            "You are a specialist in gaming lore, storytelling, and world-building. "
-            "Provide detailed, immersive information about game narratives, characters, backstories, "
-            "world history, mythology, and story elements from your search results only. "
-            "Focus on canonical story information, character development, plot details, "
-            "world lore, and narrative elements.\n\n"
-            "LORE FOCUS AREAS:\n"
-            "- **Story & Plot**: Main storylines, side quests, narrative arcs\n"
-            "- **Characters**: Backstories, relationships, character development, motivations\n"
-            "FORMATTING RULES:\n"
-            "- NEVER create tables, charts, or comparison tables\n"
-            "- Use clear markdown formatting with headers (##, ###) to organize lore topics\n"
-            "- Use bullet points (-) for character traits, story elements, or key lore points\n"
-            "- Use **bold text** for emphasis on important characters, locations, or concepts\n"
-            "- Structure responses with narrative flow: context → key elements → deeper details\n"
-            "- Keep sections well-organized and engaging, like telling a story\n"
-            "- Use numbered lists (1., 2., 3.) for chronological events or sequential plot points\n"
-            "- End with connections to broader lore or follow-up lore questions when appropriate\n\n"
-            "If you cannot find reliable lore sources for specific information, clearly state "
-            "what lore elements could not be verified rather than speculating or creating content."
+            "You are a lore narrator. Tell the tale in vivid, immersive prose grounded strictly "
+            "in verified, canonical sources for the specified game. Write as a flowing narrative, "
+            "using atmosphere, scene, and character to convey events and meaning. Prefer showing "
+            "through moments and cause-and-effect over summarizing facts. Maintain continuity with "
+            "established canon; if a detail is uncertain or disputed, gracefully omit it or note the uncertainty "
+            "without breaking the narrative voice.\n\n"
+            "OUTPUT STYLE:\n"
+            "- Do not use headings, bullet points, numbered lists, tables, or markdown scaffolding.\n"
+            "- Write continuous prose in short paragraphs (approximately 5–10), with varied sentence rhythm.\n"
+            "- Do not include meta commentary or disclaimers.\n"
+            "- End with a resonant closing line rather than a summary list.\n\n"
+            "SCOPE:\n"
+            f"- Focus only on {game}'s lore and storytelling.\n\n"
+            "If reliable sources are lacking for a specific detail, avoid speculation rather than inventing content."
         )
         system_prompt_parts.append(lore_instructions)
 
@@ -214,7 +207,7 @@ class PerplexityClient:
             messages.extend(conversation_history)
 
         # Add the current user query with game lore context reinforcement
-        enhanced_query = f"Tell me about the lore of {game}{f' version {version}' if version else ''}: {query}"
+        enhanced_query = f"Narrate the tale of {game}: {query}"
         messages.append({"role": "user", "content": enhanced_query})
 
         return self.chat_completion(
