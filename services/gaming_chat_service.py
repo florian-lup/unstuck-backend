@@ -64,6 +64,7 @@ class GamingChatService:
                         game_name=request.game,
                         game_version=request.version,
                         user_query=request.query,
+                        conversation_type="chat",
                     )
                 else:
                     conversation = existing_conversation
@@ -74,6 +75,7 @@ class GamingChatService:
                     game_name=request.game,
                     game_version=request.version,
                     user_query=request.query,
+                    conversation_type="chat",
                 )
 
             # Build conversation history for API
@@ -237,6 +239,7 @@ class GamingChatService:
                 "title": conv.title,
                 "game_name": conv.game_name,
                 "game_version": conv.game_version,
+                "conversation_type": conv.conversation_type,  # Use dedicated field
                 "created_at": conv.created_at.isoformat(),
                 "updated_at": conv.updated_at.isoformat(),
             }

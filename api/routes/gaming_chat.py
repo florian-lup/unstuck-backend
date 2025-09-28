@@ -78,9 +78,10 @@ async def list_conversations(
     _: RateLimited = None,
 ) -> dict[str, Any]:
     """
-    List all active conversations for the current user.
+    List all conversations for the current user from ALL features.
 
-    Returns list of conversation summaries with metadata.
+    Returns conversations from gaming chat, gaming lore, and any future features.
+    Each conversation includes a 'conversation_type' field to identify its source.
     """
     try:
         # Get internal user record (creates if doesn't exist)
@@ -122,9 +123,10 @@ async def get_conversation_history(
     _: RateLimited = None,
 ) -> ConversationHistoryResponse:
     """
-    Get conversation history for a specific conversation.
+    Get conversation history for ANY conversation (chat, lore, etc.).
 
     Returns all messages in the conversation with metadata.
+    Works for conversations from any feature (chat, lore, future features).
     Security: Users can only access conversations they own.
     """
     try:

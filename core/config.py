@@ -56,6 +56,11 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
+    # OpenAI API (Required for gaming lore)
+    openai_api_key: str = Field(
+        ..., description="OpenAI API key", alias="OPENAI_API_KEY"
+    )
+
     # Database Configuration (Neon PostgreSQL)
     database_url: str = Field(
         ...,

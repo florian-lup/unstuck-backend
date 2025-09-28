@@ -72,8 +72,9 @@ class Conversation(Base):
     title = Column(String(500))  # Auto-generated or user-provided title
     game_name = Column(String(200), nullable=False)  # Game this conversation is about
     game_version = Column(String(100))  # Optional game version
-
-    # Conversation status
+    
+    # Conversation type and status
+    conversation_type = Column(String(50), nullable=False, default="chat")  # chat, lore, etc.
     is_archived = Column(String(20), default="active")  # active, archived, deleted
 
     # Audit timestamps
@@ -101,6 +102,7 @@ class Conversation(Base):
         Index("idx_conversations_user_id", "user_id"),
         Index("idx_conversations_user_updated", "user_id", "updated_at"),
         Index("idx_conversations_game", "game_name"),
+        Index("idx_conversations_type", "conversation_type"),
     )
 
     def __repr__(self) -> str:

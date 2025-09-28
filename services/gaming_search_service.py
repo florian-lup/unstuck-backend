@@ -4,13 +4,12 @@ import logging
 import time
 from uuid import uuid4
 
+from clients.perplexity_client import perplexity_client
 from schemas.gaming_search import (
     SearchRequest,
     SearchResponse,
     SearchResultItem,
 )
-
-from clients.perplexity_client import perplexity_client
 
 logger = logging.getLogger(__name__)
 

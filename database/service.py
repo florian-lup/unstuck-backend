@@ -168,6 +168,7 @@ class DatabaseService:
         game_version: str | None = None,
         title: str | None = None,
         user_query: str | None = None,
+        conversation_type: str = "chat",
     ) -> Conversation:
         """
         Create a new conversation for a user.
@@ -180,6 +181,7 @@ class DatabaseService:
             game_version: Optional game version
             title: Optional conversation title (overrides auto-generation)
             user_query: User's search query (used for auto-generating titles)
+            conversation_type: Type of conversation ('chat', 'lore', etc.)
 
         Returns:
             Conversation: Created conversation
@@ -190,13 +192,21 @@ class DatabaseService:
             if not generated_title and user_query:
                 generated_title = self.generate_title_from_query(user_query, game_name)
             elif not generated_title:
-                generated_title = f"{game_name} Chat"
+                type_suffix = conversation_type.title()  # "chat" -> "Chat", "lore" -> "Lore"
+                generated_title = f"{game_name} {type_suffix}"
+
+            # Create conversation metadata for other flexible data
+            metadata = {
+                "created_via": "api",
+            }
 
             conversation = Conversation(
                 user_id=user_id,
                 game_name=game_name,
                 game_version=game_version,
                 title=generated_title,
+                conversation_type=conversation_type,  # Use dedicated field
+                conversation_metadata=metadata,
             )
 
             self.db.add(conversation)
@@ -526,5 +536,43 @@ class DatabaseService:
 
         except Exception as e:
             logger.error(f"Error deleting conversation {conversation_id}: {e}")
+            await self.db.rollback()
+            raise
+
+    async def update_conversation_status(
+        self, conversation_id: UUID, status: str, user_id: UUID
+    ) -> bool:
+        """
+        Update conversation status (active, archived, deleted).
+
+        Args:
+            conversation_id: Conversation ID
+            status: New status (active, archived, deleted)
+            user_id: User ID (for security check)
+
+        Returns:
+            bool: True if updated, False if not found/not owned
+        """
+        try:
+            query = select(Conversation).where(
+                and_(
+                    Conversation.id == conversation_id, Conversation.user_id == user_id
+                )
+            )
+
+            result = await self.db.execute(query)
+            conversation = result.scalar_one_or_none()
+
+            if conversation:
+                conversation.is_archived = status  # type: ignore[assignment]
+                conversation.updated_at = datetime.utcnow()  # type: ignore[assignment]
+                await self.db.commit()
+                logger.info(f"Conversation {conversation_id} status updated to {status}")
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Error updating conversation {conversation_id} status: {e}")
             await self.db.rollback()
             raise
