@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse
 
 from api.routes import auth as auth_routes
 from api.routes import gaming_chat as gaming_routes
-from api.routes import gaming_lore as gaming_lore_routes
 from api.routes import health as health_routes
 from core.config import settings
 from schemas.auth import AuthError
@@ -197,9 +196,6 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         gaming_routes.router, prefix="/api/v1/gaming", tags=["Gaming Chat"]
-    )
-    app.include_router(
-        gaming_lore_routes.router, prefix="/api/v1/gaming", tags=["Gaming Lore"]
     )
 
     return app

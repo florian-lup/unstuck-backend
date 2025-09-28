@@ -80,7 +80,7 @@ async def list_conversations(
     """
     List all conversations for the current user from ALL features.
 
-    Returns conversations from gaming chat, gaming lore, and any future features.
+    Returns conversations from gaming chat and any future features.
     Each conversation includes a 'conversation_type' field to identify its source.
     """
     try:
@@ -123,10 +123,10 @@ async def get_conversation_history(
     _: RateLimited = None,
 ) -> ConversationHistoryResponse:
     """
-    Get conversation history for ANY conversation (chat, lore, etc.).
+    Get conversation history for ANY conversation (chat, etc.).
 
     Returns all messages in the conversation with metadata.
-    Works for conversations from any feature (chat, lore, future features).
+    Works for conversations from any feature (chat, future features).
     Security: Users can only access conversations they own.
     """
     try:
