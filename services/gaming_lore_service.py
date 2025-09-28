@@ -1,4 +1,4 @@
-"""Gaming Chat service with database-backed conversation management."""
+"""Gaming Lore service with database-backed conversation management."""
 
 import logging
 from typing import Any, cast
@@ -10,9 +10,9 @@ from clients.perplexity_client import perplexity_client
 from database.models import Conversation
 from database.service import DatabaseService
 from schemas.common import ConversationMessage
-from schemas.gaming_chat import (
-    GamingChatRequest,
-    GamingChatResponse,
+from schemas.gaming_lore import (
+    GamingLoreRequest,
+    GamingLoreResponse,
     SearchResult,
     UsageStats,
 )
@@ -20,26 +20,26 @@ from schemas.gaming_chat import (
 logger = logging.getLogger(__name__)
 
 
-class GamingChatService:
-    """Service for handling Gaming Chat requests with database-backed conversation management."""
+class GamingLoreService:
+    """Service for handling Gaming Lore requests with database-backed conversation management."""
 
     def __init__(self, db_session: AsyncSession):
-        """Initialize the Gaming Chat service with database session."""
+        """Initialize the Gaming Lore service with database session."""
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingChatRequest, user_id: UUID, auth0_user_id: str
-    ) -> GamingChatResponse:
+        self, request: GamingLoreRequest, user_id: UUID, auth0_user_id: str
+    ) -> GamingLoreResponse:
         """
-        Perform a Gaming Chat with conversation context.
+        Perform a Gaming Lore search with conversation context.
 
         Args:
-            request: Gaming Chat request
+            request: Gaming Lore request
             user_id: User ID from Auth0 token (for security)
             auth0_user_id: Auth0 user identifier
 
         Returns:
-            Gaming Chat response
+            Gaming Lore response
         """
         try:
             # Ensure user exists in database
@@ -64,7 +64,7 @@ class GamingChatService:
                         game_name=request.game,
                         game_version=request.version,
                         user_query=request.query,
-                        conversation_type="chat",
+                        conversation_type="lore",
                     )
                 else:
                     conversation = existing_conversation
@@ -75,7 +75,7 @@ class GamingChatService:
                     game_name=request.game,
                     game_version=request.version,
                     user_query=request.query,
-                    conversation_type="chat",
+                    conversation_type="lore",
                 )
 
             # Build conversation history for API
@@ -99,8 +99,8 @@ class GamingChatService:
                     if msg.role != "system"
                 ]
 
-            # Call Perplexity API
-            response = perplexity_client.gaming_chat(
+            # Call Perplexity API for lore-specific search
+            response = perplexity_client.gaming_lore(
                 query=request.query,
                 game=request.game,
                 conversation_history=conversation_history,
@@ -184,7 +184,7 @@ class GamingChatService:
                 },
             )
 
-            return GamingChatResponse(
+            return GamingLoreResponse(
                 id=response.id,
                 conversation_id=cast(UUID, conversation.id),
                 model=response.model,
@@ -196,8 +196,8 @@ class GamingChatService:
             )
 
         except Exception as e:
-            logger.error(f"Gaming Chat failed: {e}")
-            raise RuntimeError(f"Gaming Chat failed: {e!s}") from e
+            logger.error(f"Gaming Lore failed: {e}")
+            raise RuntimeError(f"Gaming Lore failed: {e!s}") from e
 
     async def get_conversation_history(
         self, conversation_id: UUID, user_id: UUID
@@ -220,7 +220,7 @@ class GamingChatService:
         self, user_id: UUID, limit: int = 20
     ) -> list[dict[str, Any]]:
         """
-        Get user's conversations.
+        Get user's lore conversations.
 
         Args:
             user_id: User ID
@@ -230,7 +230,7 @@ class GamingChatService:
             list[dict]: List of conversation summaries
         """
         conversations = await self.db_service.get_user_conversations(
-            user_id, limit=limit
+            user_id, limit=limit, conversation_type="lore"
         )
 
         return [

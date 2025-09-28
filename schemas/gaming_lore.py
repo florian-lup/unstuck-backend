@@ -1,4 +1,4 @@
-"""Gaming Chat schemas for request/response validation."""
+"""Gaming Lore schemas for request/response validation."""
 
 from typing import Any
 from uuid import UUID, uuid4
@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field
 from schemas.common import ConversationMessage
 
 
-class GamingChatRequest(BaseModel):
-    """Request schema for Gaming Chat queries."""
+class GamingLoreRequest(BaseModel):
+    """Request schema for Gaming Lore queries."""
 
     query: str = Field(
-        ..., min_length=1, max_length=500, description="Gaming Chat query"
+        ..., min_length=1, max_length=500, description="Gaming Lore query"
     )
     game: str = Field(
         ..., min_length=1, max_length=100, description="Game name to provide context"
@@ -25,7 +25,6 @@ class GamingChatRequest(BaseModel):
     conversation_history: list[ConversationMessage] | None = Field(
         default=None, description="Previous messages in the conversation"
     )
-    # temperature removed - now handled in config
 
 
 class SearchResult(BaseModel):
@@ -55,8 +54,8 @@ class UsageStats(BaseModel):
     )
 
 
-class GamingChatResponse(BaseModel):
-    """Response schema for Gaming Chat queries."""
+class GamingLoreResponse(BaseModel):
+    """Response schema for Gaming Lore queries."""
 
     id: str = Field(..., description="Unique response ID")
     conversation_id: UUID = Field(

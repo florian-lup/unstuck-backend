@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database.models import Conversation, Message, User
-from schemas.gaming_chat import ConversationMessage
+from schemas.common import ConversationMessage
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +227,7 @@ class DatabaseService:
         limit: int = 50,
         offset: int = 0,
         include_archived: bool = False,
+        conversation_type: str | None = None,
     ) -> list[Conversation]:
         """
         Get conversations for a user.
@@ -238,6 +239,7 @@ class DatabaseService:
             limit: Maximum number of conversations to return
             offset: Pagination offset
             include_archived: Whether to include archived conversations
+            conversation_type: Filter by conversation type (e.g., 'chat', 'lore')
 
         Returns:
             list[Conversation]: User's conversations
@@ -247,6 +249,9 @@ class DatabaseService:
 
             if not include_archived:
                 query = query.where(Conversation.is_archived == "active")
+
+            if conversation_type:
+                query = query.where(Conversation.conversation_type == conversation_type)
 
             query = (
                 query.order_by(desc(Conversation.updated_at))
