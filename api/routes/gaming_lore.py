@@ -32,7 +32,7 @@ async def gaming_lore(
     Perform authenticated Gaming Lore query with database persistence.
 
     Provides detailed gaming lore, story, character, and world-building information
-    using OpenAI GPT-4o mini with automatic search integration for missing information.
+    using OpenAI Responses API with built-in conversation management and web search.
     All conversations and messages are stored securely in the database.
     Requires authentication via Auth0 JWT token.
     """

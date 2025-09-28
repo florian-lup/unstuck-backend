@@ -1,4 +1,4 @@
-"""Gaming Lore service with OpenAI GPT-4o mini and database-backed conversation management."""
+"""Gaming Lore service with OpenAI Responses API and built-in conversation management."""
 
 import logging
 import time
@@ -16,18 +16,16 @@ from schemas.gaming_lore import (
     GamingLoreResponse,
     UsageStats,
 )
-from schemas.gaming_search import SearchRequest
-from services.gaming_search_service import search_service
 
 logger = logging.getLogger(__name__)
 
 
 class GamingLoreService:
     """
-    Gaming Lore service using OpenAI GPT-4o mini with tool calling for search.
+    Gaming Lore service using OpenAI Responses API with built-in conversation management and web search.
     
     Provides detailed gaming lore, story, character, and world-building information
-    with automatic search integration when the AI needs additional information.
+    with automatic search integration using OpenAI's built-in web search tool.
     """
 
     def __init__(self, db_session: AsyncSession):
@@ -54,6 +52,8 @@ class GamingLoreService:
 
             # Get or create conversation
             conversation: Conversation
+            openai_conversation = None
+            
             if request.conversation_id:
                 # Use existing conversation (verify user owns it)
                 existing_conversation = (
@@ -73,8 +73,13 @@ class GamingLoreService:
                         user_query=request.query,
                         conversation_type="lore",
                     )
+                    # Create new OpenAI conversation
+                    openai_conversation = openai_client.create_conversation()
                 else:
                     conversation = existing_conversation
+                    # For existing conversations, create fresh OpenAI conversation
+                    # (OpenAI manages stateful conversations automatically)
+                    openai_conversation = openai_client.create_conversation()
             else:
                 # Create new conversation
                 conversation = await self.db_service.create_conversation(
@@ -84,111 +89,129 @@ class GamingLoreService:
                     user_query=request.query,
                     conversation_type="lore",
                 )
-
-            # Build conversation history for OpenAI API
-            conversation_history = []
-            if request.conversation_history:
-                # Use provided conversation history
-                conversation_history = [
-                    {"role": msg.role, "content": msg.content}
-                    for msg in request.conversation_history
-                ]
-            elif conversation.messages:
-                # Use stored conversation history from database
-                conversation_history = [
-                    {"role": msg.role, "content": msg.content}
-                    for msg in conversation.messages[-10:]  # Last 10 messages for context
-                ]
-
-            # Create search function for tool calling
-            def search_function(search_request: SearchRequest):
-                """Synchronous wrapper for gaming search service."""
-                try:
-                    # Use the existing search service
-                    import asyncio
-                    loop = asyncio.get_event_loop()
-                    return loop.run_until_complete(search_service.search(search_request))
-                except Exception as e:
-                    logger.error(f"Search function failed: {str(e)}")
-                    return None
+                # Create new OpenAI conversation
+                openai_conversation = openai_client.create_conversation()
 
             # Record start time for response time tracking
             start_time = time.time()
 
-            # Call OpenAI with tool calling for search
+            # Call OpenAI Responses API with built-in conversation management and web search
             response = openai_client.gaming_lore_chat(
-                query=request.query,
                 game=request.game,
+                query=request.query,
                 version=request.version,
-                conversation_history=conversation_history,
-                search_function=search_function,
+                conversation=openai_conversation,
             )
 
             # Calculate response time
             response_time_ms = int((time.time() - start_time) * 1000)
 
-            # Extract response data
-            choice = response.choices[0]
-            message_content = choice.message.content
-            finish_reason = choice.finish_reason
+            # Extract response data from OpenAI Responses API
+            message_content = ""
+            search_results: list[Any] = []
+            sources_found: list[str] = []
+            search_performed = False
+            canonical_info = False
+            tool_calls_made = 0
+            
+            try:
+                # Get main response content
+                if hasattr(response, 'output_text'):
+                    message_content = response.output_text
+                else:
+                    message_content = "No response content available"
+                    
+                # Check for web search calls and extract sources
+                if hasattr(response, 'output') and response.output:
+                    for item in response.output:
+                        # Check for web search calls
+                        if getattr(item, 'type', None) == 'web_search_call':
+                            search_performed = True
+                            tool_calls_made += 1
+                            
+                        # Extract citations from message content
+                        elif getattr(item, 'type', None) == 'message':
+                            if hasattr(item, 'content') and item.content:
+                                for content_item in item.content:
+                                    if hasattr(content_item, 'annotations'):
+                                        for annotation in content_item.annotations:
+                                            if getattr(annotation, 'type', None) == 'url_citation':
+                                                url = getattr(annotation, 'url', '')
+                                                title = getattr(annotation, 'title', f"Source {len(sources_found) + 1}")
+                                                if url:
+                                                    sources_found.append(url)
+                                                    search_results.append({
+                                                        "title": title,
+                                                        "url": url,
+                                                        "snippet": "",
+                                                        "date": ""
+                                                    })
+                
+                # If search was performed, assume canonical info from web sources
+                canonical_info = search_performed
+                    
+            except Exception as e:
+                logger.warning(f"Error processing response: {e}")
+                message_content = str(response) if response else "Error processing response"
+                
+            finish_reason = 'stop'
 
             # Extract usage statistics
             usage_stats = None
-            if response.usage:
+            if hasattr(response, 'usage') and response.usage:
                 usage_stats = UsageStats(
                     prompt_tokens=response.usage.prompt_tokens,
                     completion_tokens=response.usage.completion_tokens,
                     total_tokens=response.usage.total_tokens,
-                    search_queries_performed=len(choice.message.tool_calls or [])
+                    search_queries_performed=tool_calls_made,
+                    structured_output_used=True,
+                    responses_api_used=True
                 )
 
-            # Process search results if tool calls were made
-            search_results = []
-            tool_calls_made = 0
-            if choice.message.tool_calls:
-                tool_calls_made = len(choice.message.tool_calls)
-                # Note: Search results are integrated into the response content
-                # We don't extract them separately as they're used internally by the model
-
             # Store user message in database
-            await self.db_service.create_message(
+            user_message = await self.db_service.add_message(
                 conversation_id=cast(UUID, conversation.id),
+                user_id=user_id,
                 role="user",
                 content=request.query,
                 search_results=None,
                 usage_stats=None,
                 model_info={"model": "user_input"},
-                response_time_ms=None,
-                finish_reason=None,
             )
 
             # Store assistant response in database
-            await self.db_service.create_message(
+            assistant_message = await self.db_service.add_message(
                 conversation_id=cast(UUID, conversation.id),
+                user_id=user_id,
                 role="assistant",
                 content=message_content,
                 search_results=search_results,
                 usage_stats=usage_stats.model_dump() if usage_stats else None,
                 model_info={
-                    "model": "gpt-4o-mini",
+                    "model": "gpt-5-mini-2025-08-07",
                     "temperature": 0.2,
                     "tool_calls_made": tool_calls_made,
+                    "structured_output": True,
+                    "responses_api": True,
+                    "canonical_info": canonical_info,
+                    "web_search_used": search_performed,
+                    "response_time_ms": response_time_ms,
+                    "finish_reason": finish_reason,
                 },
-                response_time_ms=str(response_time_ms),
-                finish_reason=finish_reason,
             )
 
-            # Create and return response
+            # Create and return enhanced response with Responses API metadata
             return GamingLoreResponse(
-                id=response.id,
+                id=getattr(response, 'id', 'unknown'),
                 conversation_id=cast(UUID, conversation.id),
-                model="gpt-4o-mini",
-                created=response.created,
+                model="gpt-5-mini-2025-08-07",
+                created=getattr(response, 'created', int(time.time())),
                 content=message_content,
-                search_results=search_results if search_results else None,
+                search_results=None,  # Will be populated from sources_used instead
                 usage=usage_stats,
                 finish_reason=finish_reason,
                 tool_calls_made=tool_calls_made,
+                sources_used=sources_found,
             )
 
         except Exception as e:

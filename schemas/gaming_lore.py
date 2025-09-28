@@ -1,4 +1,4 @@
-"""Gaming Lore schemas for request/response validation."""
+"""Gaming Lore schemas for request/response validation with Responses API support."""
 
 from typing import Any
 from uuid import UUID, uuid4
@@ -43,7 +43,7 @@ class SearchResult(BaseModel):
 
 
 class UsageStats(BaseModel):
-    """Token usage statistics from OpenAI API response."""
+    """Token usage statistics from OpenAI Responses API with enhanced metadata."""
 
     prompt_tokens: int = Field(..., description="Number of tokens in the prompt")
     completion_tokens: int = Field(
@@ -53,18 +53,24 @@ class UsageStats(BaseModel):
     search_queries_performed: int | None = Field(
         default=None, description="Number of search queries performed via tool calling"
     )
+    structured_output_used: bool = Field(
+        default=True, description="Whether structured outputs were used"
+    )
+    responses_api_used: bool = Field(
+        default=True, description="Whether the Responses API was used"
+    )
 
 
 class GamingLoreResponse(BaseModel):
-    """Response schema for Gaming Lore queries."""
+    """Enhanced response schema for Gaming Lore queries with Responses API features."""
 
     id: str = Field(..., description="Unique response ID")
     conversation_id: UUID = Field(
         default_factory=uuid4, description="ID to track conversation"
     )
-    model: str = Field(..., description="Model used for the response (gpt-4o-mini)")
+    model: str = Field(..., description="Model used for the response (gpt-5-mini-2025-08-07)")
     created: int = Field(..., description="Unix timestamp of response creation")
-    content: str = Field(..., description="AI-generated lore response content")
+    content: str = Field(..., description="AI-generated lore response content in markdown format")
     search_results: list[SearchResult] | None = Field(
         default=None, description="Search results used to generate the response (if any)"
     )
@@ -74,6 +80,9 @@ class GamingLoreResponse(BaseModel):
     )
     tool_calls_made: int = Field(
         default=0, description="Number of search tool calls made during generation"
+    )
+    sources_used: list[str] = Field(
+        default_factory=list, description="List of web sources or references used in the response"
     )
 
 
