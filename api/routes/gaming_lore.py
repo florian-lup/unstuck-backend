@@ -29,10 +29,11 @@ async def gaming_lore(
     _: RateLimited = None,
 ) -> GamingLoreResponse:
     """
-    Perform authenticated Gaming Lore query with database persistence.
+    Perform authenticated Gaming Lore query with automatic conversation management.
 
     Provides detailed gaming lore, story, character, and world-building information
     using OpenAI Responses API with built-in conversation management and web search.
+    OpenAI automatically handles conversation state - no manual history management needed.
     All conversations and messages are stored securely in the database.
     Requires authentication via Auth0 JWT token.
     """

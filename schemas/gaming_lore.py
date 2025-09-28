@@ -14,7 +14,7 @@ class ConversationMessage(BaseModel):
 
 
 class GamingLoreRequest(BaseModel):
-    """Request schema for Gaming Lore queries."""
+    """Request schema for Gaming Lore queries with OpenAI conversation management."""
 
     query: str = Field(
         ..., min_length=1, max_length=1000, description="Gaming lore query about story, characters, world-building, etc."
@@ -26,20 +26,10 @@ class GamingLoreRequest(BaseModel):
         default=None, max_length=50, description="Game version (optional)"
     )
     conversation_id: UUID | None = Field(
-        default=None, description="ID to track conversation across requests"
-    )
-    conversation_history: list[ConversationMessage] | None = Field(
-        default=None, description="Previous messages in the conversation"
+        default=None, description="ID to continue existing conversation (OpenAI handles conversation state automatically)"
     )
 
 
-class SearchResult(BaseModel):
-    """Individual search result from gaming search."""
-
-    title: str = Field(..., description="Title of the search result")
-    url: str = Field(..., description="URL of the search result")
-    snippet: str | None = Field(default=None, description="Content snippet")
-    date: str | None = Field(default=None, description="Publication date")
 
 
 class UsageStats(BaseModel):
@@ -71,9 +61,6 @@ class GamingLoreResponse(BaseModel):
     model: str = Field(..., description="Model used for the response (gpt-5-mini-2025-08-07)")
     created: int = Field(..., description="Unix timestamp of response creation")
     content: str = Field(..., description="AI-generated lore response content in markdown format")
-    search_results: list[SearchResult] | None = Field(
-        default=None, description="Search results used to generate the response (if any)"
-    )
     usage: UsageStats | None = Field(default=None, description="Token usage statistics")
     finish_reason: str | None = Field(
         default=None, description="Reason the generation finished"

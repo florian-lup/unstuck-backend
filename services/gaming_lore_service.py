@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Any, cast
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +11,6 @@ from clients.openai_client import openai_client
 from database.models import Conversation
 from database.service import DatabaseService
 from schemas.gaming_lore import (
-    ConversationMessage,
     GamingLoreRequest,
     GamingLoreResponse,
     UsageStats,
@@ -25,7 +24,8 @@ class GamingLoreService:
     Gaming Lore service using OpenAI Responses API with built-in conversation management and web search.
     
     Provides detailed gaming lore, story, character, and world-building information
-    with automatic search integration using OpenAI's built-in web search tool.
+    with automatic search integration. OpenAI manages conversation state automatically,
+    eliminating the need for manual conversation history management.
     """
 
     def __init__(self, db_session: AsyncSession):
@@ -36,15 +36,15 @@ class GamingLoreService:
         self, request: GamingLoreRequest, user_id: UUID, auth0_user_id: str
     ) -> GamingLoreResponse:
         """
-        Perform a Gaming Lore query with conversation context and tool calling.
+        Perform a Gaming Lore query with OpenAI's automatic conversation management.
 
         Args:
-            request: Gaming Lore request
+            request: Gaming Lore request (conversation_id is optional for continuing conversations)
             user_id: User ID from database
             auth0_user_id: Auth0 user identifier
 
         Returns:
-            Gaming Lore response with detailed information
+            Gaming Lore response with detailed information and web search results
         """
         try:
             # Ensure user exists in database
@@ -108,7 +108,6 @@ class GamingLoreService:
 
             # Extract response data from OpenAI Responses API
             message_content = ""
-            search_results: list[Any] = []
             sources_found: list[str] = []
             search_performed = False
             canonical_info = False
@@ -137,15 +136,8 @@ class GamingLoreService:
                                         for annotation in content_item.annotations:
                                             if getattr(annotation, 'type', None) == 'url_citation':
                                                 url = getattr(annotation, 'url', '')
-                                                title = getattr(annotation, 'title', f"Source {len(sources_found) + 1}")
                                                 if url:
                                                     sources_found.append(url)
-                                                    search_results.append({
-                                                        "title": title,
-                                                        "url": url,
-                                                        "snippet": "",
-                                                        "date": ""
-                                                    })
                 
                 # If search was performed, assume canonical info from web sources
                 canonical_info = search_performed
@@ -169,7 +161,7 @@ class GamingLoreService:
                 )
 
             # Store user message in database
-            user_message = await self.db_service.add_message(
+            await self.db_service.add_message(
                 conversation_id=cast(UUID, conversation.id),
                 user_id=user_id,
                 role="user",
@@ -180,12 +172,11 @@ class GamingLoreService:
             )
 
             # Store assistant response in database
-            assistant_message = await self.db_service.add_message(
+            await self.db_service.add_message(
                 conversation_id=cast(UUID, conversation.id),
                 user_id=user_id,
                 role="assistant",
                 content=message_content,
-                search_results=search_results,
                 usage_stats=usage_stats.model_dump() if usage_stats else None,
                 model_info={
                     "model": "gpt-5-mini-2025-08-07",
@@ -207,7 +198,6 @@ class GamingLoreService:
                 model="gpt-5-mini-2025-08-07",
                 created=getattr(response, 'created', int(time.time())),
                 content=message_content,
-                search_results=None,  # Will be populated from sources_used instead
                 usage=usage_stats,
                 finish_reason=finish_reason,
                 tool_calls_made=tool_calls_made,
@@ -218,41 +208,3 @@ class GamingLoreService:
             logger.error(f"Gaming Lore search failed: {str(e)}")
             raise RuntimeError(f"Gaming Lore search failed: {str(e)}") from e
 
-    async def get_conversation_history(
-        self, conversation_id: UUID, user_id: UUID
-    ) -> dict[str, Any]:
-        """
-        Get conversation history for a gaming lore conversation.
-
-        Args:
-            conversation_id: Conversation ID to retrieve
-            user_id: User ID for security verification
-
-        Returns:
-            Conversation history with messages
-        """
-        try:
-            conversation = await self.db_service.get_conversation_with_messages(
-                conversation_id, user_id, limit=100
-            )
-
-            if not conversation:
-                raise ValueError("Conversation not found or access denied")
-
-            messages = [
-                ConversationMessage(role=msg.role, content=msg.content)
-                for msg in conversation.messages
-            ]
-
-            return {
-                "conversation_id": conversation.id,
-                "messages": messages,
-                "created_at": int(conversation.created_at.timestamp()),
-                "updated_at": int(conversation.updated_at.timestamp()),
-                "game_name": conversation.game_name,
-                "game_version": conversation.game_version,
-            }
-
-        except Exception as e:
-            logger.error(f"Get conversation history failed: {str(e)}")
-            raise RuntimeError(f"Failed to retrieve conversation history: {str(e)}") from e
