@@ -148,17 +148,8 @@ class GamingLoreService:
                 
             finish_reason = 'stop'
 
-            # Extract usage statistics
+            # Skip usage statistics extraction to avoid ResponseUsage attribute errors
             usage_stats = None
-            if hasattr(response, 'usage') and response.usage:
-                usage_stats = UsageStats(
-                    prompt_tokens=response.usage.prompt_tokens,
-                    completion_tokens=response.usage.completion_tokens,
-                    total_tokens=response.usage.total_tokens,
-                    search_queries_performed=tool_calls_made,
-                    structured_output_used=True,
-                    responses_api_used=True
-                )
 
             # Store user message in database
             await self.db_service.add_message(
