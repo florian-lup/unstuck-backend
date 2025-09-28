@@ -91,7 +91,6 @@ SCOPE: This conversation is EXCLUSIVELY about {game} lore and story elements.
             "model": "gpt-5-mini-2025-08-07",
             "input": input_data,
             "tools": [{"type": "web_search"}],
-            "temperature": 0.2,
             **kwargs
         }
         

@@ -180,7 +180,6 @@ class GamingLoreService:
                 usage_stats=usage_stats.model_dump() if usage_stats else None,
                 model_info={
                     "model": "gpt-5-mini-2025-08-07",
-                    "temperature": 0.2,
                     "tool_calls_made": tool_calls_made,
                     "structured_output": True,
                     "responses_api": True,
