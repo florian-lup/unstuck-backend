@@ -192,7 +192,9 @@ class DatabaseService:
             if not generated_title and user_query:
                 generated_title = self.generate_title_from_query(user_query, game_name)
             elif not generated_title:
-                type_suffix = conversation_type.title()  # "chat" -> "Chat", "lore" -> "Lore"
+                type_suffix = (
+                    conversation_type.title()
+                )  # "chat" -> "Chat", "lore" -> "Lore"
                 generated_title = f"{game_name} {type_suffix}"
 
             # Create conversation metadata for other flexible data
@@ -572,7 +574,9 @@ class DatabaseService:
                 conversation.is_archived = status  # type: ignore[assignment]
                 conversation.updated_at = datetime.utcnow()  # type: ignore[assignment]
                 await self.db.commit()
-                logger.info(f"Conversation {conversation_id} status updated to {status}")
+                logger.info(
+                    f"Conversation {conversation_id} status updated to {status}"
+                )
                 return True
 
             return False

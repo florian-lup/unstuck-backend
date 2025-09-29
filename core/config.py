@@ -56,7 +56,6 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
-
     # Database Configuration (Neon PostgreSQL)
     database_url: str = Field(
         ...,

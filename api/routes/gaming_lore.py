@@ -32,8 +32,8 @@ async def gaming_lore(
     """
     Perform authenticated Gaming Lore search with database persistence.
 
-    Searches for gaming lore, stories, characters, and world-building information 
-    using AI with conversation context. All conversations and messages are stored 
+    Searches for gaming lore, stories, characters, and world-building information
+    using AI with conversation context. All conversations and messages are stored
     securely in the database. Requires authentication via Auth0 JWT token.
     """
     try:

@@ -55,7 +55,9 @@ class SearchService:
                         )
                     )
 
-            logger.info(f"Search completed - ID: {search_id}, Results: {len(search_results)}")
+            logger.info(
+                f"Search completed - ID: {search_id}, Results: {len(search_results)}"
+            )
 
             return SearchResponse(
                 id=search_id,

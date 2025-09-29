@@ -72,9 +72,11 @@ class Conversation(Base):
     title = Column(String(500))  # Auto-generated or user-provided title
     game_name = Column(String(200), nullable=False)  # Game this conversation is about
     game_version = Column(String(100))  # Optional game version
-    
+
     # Conversation type and status
-    conversation_type = Column(String(50), nullable=False, default="chat")  # chat, lore, etc.
+    conversation_type = Column(
+        String(50), nullable=False, default="chat"
+    )  # chat, lore, etc.
     is_archived = Column(String(20), default="active")  # active, archived, deleted
 
     # Audit timestamps

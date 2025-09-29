@@ -1,4 +1,4 @@
-"""Gaming Guides service with database-backed conversation management."""
+"""Gaming Builds service with database-backed conversation management."""
 
 import logging
 from typing import Any, cast
@@ -10,9 +10,9 @@ from clients.perplexity_client import perplexity_client
 from database.models import Conversation
 from database.service import DatabaseService
 from schemas.common import ConversationMessage
-from schemas.gaming_guides import (
-    GamingGuidesRequest,
-    GamingGuidesResponse,
+from schemas.gaming_builds import (
+    GamingBuildsRequest,
+    GamingBuildsResponse,
     SearchResult,
     UsageStats,
 )
@@ -21,26 +21,26 @@ from utils import remove_think_tags
 logger = logging.getLogger(__name__)
 
 
-class GamingGuidesService:
-    """Service for handling Gaming Guides requests with database-backed conversation management."""
+class GamingBuildsService:
+    """Service for handling Gaming Builds requests with database-backed conversation management."""
 
     def __init__(self, db_session: AsyncSession):
-        """Initialize the Gaming Guides service with database session."""
+        """Initialize the Gaming Builds service with database session."""
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingGuidesRequest, user_id: UUID, auth0_user_id: str
-    ) -> GamingGuidesResponse:
+        self, request: GamingBuildsRequest, user_id: UUID, auth0_user_id: str
+    ) -> GamingBuildsResponse:
         """
-        Perform a Gaming Guides search with conversation context.
+        Perform a Gaming Builds search with conversation context.
 
         Args:
-            request: Gaming Guides request
+            request: Gaming Builds request
             user_id: User ID from Auth0 token (for security)
             auth0_user_id: Auth0 user identifier
 
         Returns:
-            Gaming Guides response
+            Gaming Builds response
         """
         try:
             # Ensure user exists in database
@@ -65,7 +65,7 @@ class GamingGuidesService:
                         game_name=request.game,
                         game_version=request.version,
                         user_query=request.query,
-                        conversation_type="guides",
+                        conversation_type="builds",
                     )
                 else:
                     conversation = existing_conversation
@@ -76,7 +76,7 @@ class GamingGuidesService:
                     game_name=request.game,
                     game_version=request.version,
                     user_query=request.query,
-                    conversation_type="guides",
+                    conversation_type="builds",
                 )
 
             # Build conversation history for API
@@ -100,8 +100,8 @@ class GamingGuidesService:
                     if msg.role != "system"
                 ]
 
-            # Call Perplexity API for guides-specific search
-            response = perplexity_client.gaming_guides(
+            # Call Perplexity API for builds-specific search
+            response = perplexity_client.gaming_builds(
                 query=request.query,
                 game=request.game,
                 conversation_history=conversation_history,
@@ -188,7 +188,7 @@ class GamingGuidesService:
                 },
             )
 
-            return GamingGuidesResponse(
+            return GamingBuildsResponse(
                 id=response.id,
                 conversation_id=cast(UUID, conversation.id),
                 model=response.model,
@@ -200,8 +200,8 @@ class GamingGuidesService:
             )
 
         except Exception as e:
-            logger.error(f"Gaming Guides failed: {e}")
-            raise RuntimeError(f"Gaming Guides failed: {e!s}") from e
+            logger.error(f"Gaming Builds failed: {e}")
+            raise RuntimeError(f"Gaming Builds failed: {e!s}") from e
 
     async def get_conversation_history(
         self, conversation_id: UUID, user_id: UUID
@@ -224,7 +224,7 @@ class GamingGuidesService:
         self, user_id: UUID, limit: int = 20
     ) -> list[dict[str, Any]]:
         """
-        Get user's guides conversations.
+        Get user's builds conversations.
 
         Args:
             user_id: User ID
@@ -234,7 +234,7 @@ class GamingGuidesService:
             list[dict]: List of conversation summaries
         """
         conversations = await self.db_service.get_user_conversations(
-            user_id, limit=limit, conversation_type="guides"
+            user_id, limit=limit, conversation_type="builds"
         )
 
         return [

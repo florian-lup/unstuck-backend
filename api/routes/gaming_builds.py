@@ -1,4 +1,4 @@
-"""Gaming Guides API routes with database-backed authentication."""
+"""Gaming Builds API routes with database-backed authentication."""
 
 from typing import Any, cast
 from uuid import UUID
@@ -11,28 +11,28 @@ from core.rate_limit import RateLimited
 from database.connection import get_db_session
 from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser
-from schemas.gaming_guides import (
+from schemas.gaming_builds import (
     ConversationHistoryResponse,
-    GamingGuidesRequest,
-    GamingGuidesResponse,
+    GamingBuildsRequest,
+    GamingBuildsResponse,
 )
-from services.gaming_guides_service import GamingGuidesService
+from services.gaming_builds_service import GamingBuildsService
 
 router = APIRouter()
 
 
-@router.post("/guides", response_model=GamingGuidesResponse)
-async def gaming_guides(
-    request_data: GamingGuidesRequest,
+@router.post("/builds", response_model=GamingBuildsResponse)
+async def gaming_builds(
+    request_data: GamingBuildsRequest,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
     db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
-) -> GamingGuidesResponse:
+) -> GamingBuildsResponse:
     """
-    Perform authenticated Gaming Guides search with database persistence.
+    Perform authenticated Gaming Builds search with database persistence.
 
-    Searches for gaming guides, tutorials, walkthroughs, and how-to information
+    Searches for gaming builds, character optimization, loadouts, and equipment setups
     using AI with conversation context. All conversations and messages are stored
     securely in the database. Requires authentication via Auth0 JWT token.
     """
@@ -49,7 +49,7 @@ async def gaming_guides(
         )
 
         # Create service instance with database session
-        service = GamingGuidesService(db_session)
+        service = GamingBuildsService(db_session)
 
         # Perform search with user authentication
         return await service.search(
@@ -62,15 +62,15 @@ async def gaming_guides(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "guides_search_failed",
-                "message": f"Gaming Guides search failed: {str(e)}",
+                "error": "builds_search_failed",
+                "message": f"Gaming Builds search failed: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
 
 
 @router.get("/conversations")
-async def list_guides_conversations(
+async def list_builds_conversations(
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
     db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
@@ -78,10 +78,10 @@ async def list_guides_conversations(
     _: RateLimited = None,
 ) -> dict[str, Any]:
     """
-    List all guides conversations for the current user.
+    List all builds conversations for the current user.
 
-    Returns conversations from gaming guides feature only.
-    Each conversation includes a 'conversation_type' field set to 'guides'.
+    Returns conversations from gaming builds feature only.
+    Each conversation includes a 'conversation_type' field set to 'builds'.
     """
     try:
         # Get internal user record (creates if doesn't exist)
@@ -92,7 +92,7 @@ async def list_guides_conversations(
             username=current_user.name,
         )
 
-        service = GamingGuidesService(db_session)
+        service = GamingBuildsService(db_session)
 
         conversations = await service.get_user_conversations(
             user_id=cast(UUID, internal_user.id), limit=limit
@@ -104,8 +104,8 @@ async def list_guides_conversations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "guides_conversation_list_failed",
-                "message": f"Failed to list guides conversations: {str(e)}",
+                "error": "builds_conversation_list_failed",
+                "message": f"Failed to list builds conversations: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
@@ -115,7 +115,7 @@ async def list_guides_conversations(
     "/conversations/{conversation_id}/history",
     response_model=ConversationHistoryResponse,
 )
-async def get_guides_conversation_history(
+async def get_builds_conversation_history(
     conversation_id: UUID,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -123,9 +123,9 @@ async def get_guides_conversation_history(
     _: RateLimited = None,
 ) -> ConversationHistoryResponse:
     """
-    Get guides conversation history.
+    Get builds conversation history.
 
-    Returns all messages in the guides conversation with metadata.
+    Returns all messages in the builds conversation with metadata.
     Security: Users can only access conversations they own.
     """
     try:
@@ -137,7 +137,7 @@ async def get_guides_conversation_history(
             username=current_user.name,
         )
 
-        service = GamingGuidesService(db_session)
+        service = GamingBuildsService(db_session)
 
         # Get conversation messages (includes security check)
         messages = await service.get_conversation_history(
@@ -148,8 +148,8 @@ async def get_guides_conversation_history(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "error": "guides_conversation_not_found",
-                    "message": f"Guides conversation {conversation_id} not found or access denied",
+                    "error": "builds_conversation_not_found",
+                    "message": f"Builds conversation {conversation_id} not found or access denied",
                 },
             )
 
@@ -166,15 +166,15 @@ async def get_guides_conversation_history(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "guides_history_retrieval_failed",
-                "message": f"Failed to retrieve guides conversation history: {str(e)}",
+                "error": "builds_history_retrieval_failed",
+                "message": f"Failed to retrieve builds conversation history: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
 
 
 @router.put("/conversations/{conversation_id}/title")
-async def update_guides_conversation_title(
+async def update_builds_conversation_title(
     conversation_id: UUID,
     title_data: dict[str, str],
     request: Request,
@@ -183,13 +183,13 @@ async def update_guides_conversation_title(
     _: RateLimited = None,
 ) -> dict[str, Any]:
     """
-    Update guides conversation title.
+    Update builds conversation title.
 
-    Allows users to rename their guides conversations for better organization.
+    Allows users to rename their builds conversations for better organization.
     Security: Users can only update conversations they own.
     """
     try:
-        service = GamingGuidesService(db_session)
+        service = GamingBuildsService(db_session)
 
         new_title = title_data.get("title", "").strip()
         if not new_title or len(new_title) > 500:
@@ -219,14 +219,14 @@ async def update_guides_conversation_title(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "error": "guides_conversation_not_found",
-                    "message": f"Guides conversation {conversation_id} not found or access denied",
+                    "error": "builds_conversation_not_found",
+                    "message": f"Builds conversation {conversation_id} not found or access denied",
                 },
             )
 
         return {
             "success": True,
-            "message": "Guides conversation title updated successfully",
+            "message": "Builds conversation title updated successfully",
             "conversation_id": str(conversation_id),
             "new_title": new_title,
         }
@@ -237,15 +237,15 @@ async def update_guides_conversation_title(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "guides_title_update_failed",
-                "message": f"Failed to update guides conversation title: {str(e)}",
+                "error": "builds_title_update_failed",
+                "message": f"Failed to update builds conversation title: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
 
 
 @router.post("/conversations/{conversation_id}/archive")
-async def archive_guides_conversation(
+async def archive_builds_conversation(
     conversation_id: UUID,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -253,7 +253,7 @@ async def archive_guides_conversation(
     _: RateLimited = None,
 ) -> dict[str, Any]:
     """
-    Archive a guides conversation.
+    Archive a builds conversation.
 
     Archived conversations are hidden from the main list but not deleted.
     Users can still access them if they have the conversation ID.
@@ -268,7 +268,7 @@ async def archive_guides_conversation(
             username=current_user.name,
         )
 
-        service = GamingGuidesService(db_session)
+        service = GamingBuildsService(db_session)
 
         success = await service.archive_conversation(
             conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
@@ -278,14 +278,14 @@ async def archive_guides_conversation(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "error": "guides_conversation_not_found",
-                    "message": f"Guides conversation {conversation_id} not found or access denied",
+                    "error": "builds_conversation_not_found",
+                    "message": f"Builds conversation {conversation_id} not found or access denied",
                 },
             )
 
         return {
             "success": True,
-            "message": "Guides conversation archived successfully",
+            "message": "Builds conversation archived successfully",
             "conversation_id": str(conversation_id),
         }
 
@@ -295,15 +295,15 @@ async def archive_guides_conversation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "guides_archive_failed",
-                "message": f"Failed to archive guides conversation: {str(e)}",
+                "error": "builds_archive_failed",
+                "message": f"Failed to archive builds conversation: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e
 
 
 @router.delete("/conversations/{conversation_id}")
-async def delete_guides_conversation(
+async def delete_builds_conversation(
     conversation_id: UUID,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -311,7 +311,7 @@ async def delete_guides_conversation(
     _: RateLimited = None,
 ) -> dict[str, Any]:
     """
-    Permanently delete a guides conversation and all its messages.
+    Permanently delete a builds conversation and all its messages.
 
     ⚠️ WARNING: This action is irreversible!
 
@@ -330,7 +330,7 @@ async def delete_guides_conversation(
             username=current_user.name,
         )
 
-        service = GamingGuidesService(db_session)
+        service = GamingBuildsService(db_session)
 
         success = await service.delete_conversation(
             conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
@@ -340,14 +340,14 @@ async def delete_guides_conversation(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "error": "guides_conversation_not_found",
-                    "message": f"Guides conversation {conversation_id} not found or access denied",
+                    "error": "builds_conversation_not_found",
+                    "message": f"Builds conversation {conversation_id} not found or access denied",
                 },
             )
 
         return {
             "success": True,
-            "message": "Guides conversation and all messages permanently deleted",
+            "message": "Builds conversation and all messages permanently deleted",
             "conversation_id": str(conversation_id),
             "warning": "This action was irreversible",
         }
@@ -358,8 +358,8 @@ async def delete_guides_conversation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
-                "error": "guides_delete_failed",
-                "message": f"Failed to delete guides conversation: {str(e)}",
+                "error": "builds_delete_failed",
+                "message": f"Failed to delete builds conversation: {str(e)}",
                 "request_id": getattr(request.state, "request_id", None),
             },
         ) from e

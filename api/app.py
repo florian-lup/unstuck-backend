@@ -11,6 +11,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from api.routes import auth as auth_routes
+from api.routes import gaming_builds as gaming_builds_routes
 from api.routes import gaming_chat as gaming_routes
 from api.routes import gaming_guides as gaming_guides_routes
 from api.routes import gaming_lore as gaming_lore_routes
@@ -204,6 +205,9 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         gaming_guides_routes.router, prefix="/api/v1/gaming", tags=["Gaming Guides"]
+    )
+    app.include_router(
+        gaming_builds_routes.router, prefix="/api/v1/gaming", tags=["Gaming Builds"]
     )
 
     return app

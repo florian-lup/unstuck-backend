@@ -44,7 +44,7 @@ class PerplexityClient:
             "web_search_options": web_search_options,
             **kwargs,
         }
-        
+
         # Only include temperature if provided
         if temperature is not None:
             params["temperature"] = temperature
@@ -333,6 +333,109 @@ class PerplexityClient:
             **kwargs,
         )
 
+    def gaming_builds(
+        self,
+        query: str,
+        game: str,
+        conversation_history: list[dict[str, Any]] | None = None,
+        version: str | None = None,
+        model: str = "sonar-reasoning",
+        search_context_size: str = "low",
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Perform a gaming builds-specific search query.
+
+        Args:
+            query: The search query about gaming builds/loadouts
+            game: The specific game name to provide context for (required)
+            conversation_history: Previous messages in the conversation
+            version: The game version to provide context for (optional)
+            model: The model to use (default: "sonar-reasoning")
+            search_context_size: Context size for web search ("low", "medium", "high", default: "low")
+            **kwargs: Additional parameters
+
+        Returns:
+            Chat completion response with gaming builds information
+        """
+        # Build the message history
+        messages = []
+
+        # Build system prompt with game context for builds
+        system_prompt_parts = []
+
+        # Add game-specific context (game is always provided)
+        context_parts = [f"Game: {game}"]
+        if version:
+            context_parts.append(f"Version: {version}")
+
+        game_context = (
+            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
+            f"{' | '.join(context_parts)}\n\n"
+            f"CRITICAL INSTRUCTIONS:\n"
+            f"- You MUST ONLY search and provide build information about {game}{f' version {version}' if version else ''}\n"
+            f"- IGNORE all results about other games\n"
+            f"- If no {game} build information is found, explicitly state 'No {game} build information found'\n"
+            f"- DO NOT provide information about any other game, even if more results exist\n"
+            f"- When searching, focus specifically on {game} builds, loadouts, character optimization, and equipment setups only\n\n"
+            f"BUILDS SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} builds and character optimization.\n"
+            f"All answers must be relevant to this specific game's builds only.\n\n"
+        )
+        system_prompt_parts.append(game_context)
+
+        # Add builds-specific instructions
+        builds_instructions = (
+            "You are a specialist in gaming builds, character optimization, and equipment setups. "
+            "Provide detailed, optimized builds and loadouts from your search results only. "
+            "Focus on effective character configurations, equipment choices, stat distributions, "
+            "skill trees, and synergistic combinations that maximize performance for specific playstyles or objectives.\n\n"
+            "BUILDS FOCUS AREAS:\n"
+            "- **Character Builds**: Complete stat distributions, attribute allocations, level progression\n"
+            "- **Equipment Loadouts**: Weapon combinations, armor sets, accessory choices\n"
+            "- **Skill Trees**: Optimal skill point allocation, ability progression paths\n"
+            "- **Synergies**: How different build elements work together effectively\n"
+            "- **Playstyle Optimization**: Builds tailored for specific roles (DPS, tank, support, etc.)\n"
+            "- **Meta Builds**: Current popular and effective build configurations\n"
+            "- **Budget/Progression Builds**: Builds for different stages of game progression\n"
+            "- **Situational Builds**: Specialized builds for specific encounters or content\n\n"
+            "FORMATTING RULES:\n"
+            "- NEVER create tables, charts, or comparison tables\n"
+            "- Use clear markdown formatting with headers (##, ###) to organize build sections\n"
+            "- Use bullet points (-) for equipment lists, stat requirements, or build components\n"
+            "- Use **bold text** for emphasis on key items, stats, or important build elements\n"
+            "- Structure responses with logical flow: build overview → core components → alternatives → tips\n"
+            "- Include clear sections for different build aspects (stats, equipment, skills, etc.)\n"
+            "- Use numbered lists (1., 2., 3.) for build progression steps or priority orders\n"
+            "- End with build tips, variations, or upgrade paths when appropriate\n\n"
+            "BUILD REQUIREMENTS:\n"
+            "- Always specify minimum level requirements or prerequisites\n"
+            "- Include exact stat numbers, percentages, or values when available\n"
+            "- Mention alternative equipment options for different budgets or availability\n"
+            "- Explain the reasoning behind key build choices and synergies\n"
+            "- Include performance expectations and suitable content types for each build\n\n"
+            "If you cannot find reliable build sources for specific information, clearly state "
+            "what build information could not be verified rather than providing potentially suboptimal recommendations."
+        )
+        system_prompt_parts.append(builds_instructions)
+
+        system_prompt = "".join(system_prompt_parts)
+        messages.append({"role": "system", "content": system_prompt})
+
+        # Add conversation history if provided
+        if conversation_history:
+            messages.extend(conversation_history)
+
+        # Add the current user query with game builds context reinforcement
+        enhanced_query = f"Show me optimal builds for {game}{f' version {version}' if version else ''}: {query}"
+        messages.append({"role": "user", "content": enhanced_query})
+
+        return self.chat_completion(
+            messages=messages,
+            model=model,
+            search_context_size=search_context_size,
+            **kwargs,
+        )
+
     def search(
         self,
         query: str | list[str],
@@ -360,7 +463,6 @@ class PerplexityClient:
         }
 
         return self._client.search.create(**search_params)
-
 
 
 # Global client instance

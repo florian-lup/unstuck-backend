@@ -45,7 +45,9 @@ class SearchErrorResponse(BaseModel):
 
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Human-readable error message")
-    query: str | list[str] | None = Field(default=None, description="Original query that failed")
+    query: str | list[str] | None = Field(
+        default=None, description="Original query that failed"
+    )
     details: dict[str, Any] | None = Field(
         default=None, description="Additional error details"
     )
