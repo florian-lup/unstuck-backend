@@ -81,46 +81,25 @@ class PerplexityClient:
         # Build the message history
         messages = []
 
-        # Build system prompt with game context
-        system_prompt_parts = []
-
-        # Add game-specific context (game is always provided)
+        # Build system prompt with integrated game context
         context_parts = [f"Game: {game}"]
 
-        game_context = (
-            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
-            f"{' | '.join(context_parts)}\n\n"
-            f"CRITICAL INSTRUCTIONS:\n"
-            f"- You MUST ONLY search and provide information about {game}{f' version {version}' if version else ''}\n"
-            f"- IGNORE all results about other games\n"
-            f"- If no {game} information is found, explicitly state 'No {game} information found'\n"
-            f"- DO NOT provide information about any other game, even if more results exist\n"
-            f"- When searching, focus specifically on {game} content only\n\n"
-            f"GAME SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''}.\n"
-            f"All answers must be relevant to this specific game only.\n\n"
-        )
-        system_prompt_parts.append(game_context)
-
-        # Add main instructions
-        main_instructions = (
-            "Provide detailed, accurate gaming information from your search results only. "
-            "If you cannot find reliable sources for specific information, clearly state "
-            "what information could not be verified rather than speculating. "
+        system_prompt = (
+            "You are a helpful gaming AI assistant\n"
+            "Always search in english but respond in the language of the user\n"
+            "Provide concise and to the point responses\n"
+            "End with a follow up question when appropriate\n"
             "Focus on factual, up-to-date information from your search results.\n\n"
+            "MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
+            f"{' | '.join(context_parts)}\n\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            f"GAME SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''}.\n"
+            f"- You MUST ONLY search and provide information about {game}{f' version {version}' if version else ''}\n"
+            f"- If no {game} information is found, explicitly state 'No {game} information found'\n\n"
             "FORMATTING RULES:\n"
             "- NEVER create tables, charts, or comparison tables\n"
-            "- Use clear markdown formatting with headers (##, ###) to organize information\n"
-            "- Use bullet points (-) for lists and key points\n"
-            "- Use **bold text** for emphasis on important terms or concepts\n"
-            "- When comparing options, use separate sections with clear headers instead of tables\n"
             "- Structure responses with logical flow: overview → key points → specific details\n"
-            "- Keep paragraphs concise and well-organized\n"
-            "- Use numbered lists (1., 2., 3.) only for sequential steps or ranked items\n"
-            "- End with a clear, actionable summary or follow up question when appropriate"
         )
-        system_prompt_parts.append(main_instructions)
-
-        system_prompt = "".join(system_prompt_parts)
         messages.append({"role": "system", "content": system_prompt})
 
         # Add conversation history if provided
@@ -169,31 +148,23 @@ class PerplexityClient:
         # Build the message history
         messages = []
 
-        # Build system prompt with game context for lore
-        system_prompt_parts = []
-
-        # Add game-specific context (game is always provided)
+        # Build system prompt with integrated game context for lore
         context_parts = [f"Game: {game}"]
         if version:
             context_parts.append(f"Version: {version}")
 
-        game_context = (
-            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
+        system_prompt = (
+            "MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
             f"{' | '.join(context_parts)}\n\n"
-            f"CRITICAL INSTRUCTIONS:\n"
-            f"- Write the response as you would narrate a tale\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            "- Write the response as you would narrate a tale\n"
             f"- You MUST ONLY search and provide lore information about {game}\n"
-            f"- IGNORE all results about other games\n"
+            "- IGNORE all results about other games\n"
             f"- If no {game} lore information is found, explicitly state 'No {game} lore information found'\n"
-            f"- DO NOT provide information about any other game, even if more results exist\n"
+            "- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} lore, story, characters, world-building content only\n\n"
             f"LORE SCOPE: This query is EXCLUSIVELY about {game} lore and storytelling.\n"
-            f"All answers must be relevant to this specific game's lore only.\n\n"
-        )
-        system_prompt_parts.append(game_context)
-
-        # Add lore-specific instructions
-        lore_instructions = (
+            "All answers must be relevant to this specific game's lore only.\n\n"
             "You are a lore narrator. Tell the tale in vivid, immersive prose grounded strictly "
             "in verified, canonical sources for the specified game. Write as a flowing narrative, "
             "using atmosphere, scene, and character to convey events and meaning. Prefer showing "
@@ -209,9 +180,6 @@ class PerplexityClient:
             f"- Focus only on {game}'s lore and storytelling.\n\n"
             "If reliable sources are lacking for a specific detail, avoid speculation rather than inventing content."
         )
-        system_prompt_parts.append(lore_instructions)
-
-        system_prompt = "".join(system_prompt_parts)
         messages.append({"role": "system", "content": system_prompt})
 
         # Add conversation history if provided
@@ -258,30 +226,22 @@ class PerplexityClient:
         # Build the message history
         messages = []
 
-        # Build system prompt with game context for guides
-        system_prompt_parts = []
-
-        # Add game-specific context (game is always provided)
+        # Build system prompt with integrated game context for guides
         context_parts = [f"Game: {game}"]
         if version:
             context_parts.append(f"Version: {version}")
 
-        game_context = (
-            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
+        system_prompt = (
+            "MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
             f"{' | '.join(context_parts)}\n\n"
-            f"CRITICAL INSTRUCTIONS:\n"
+            "CRITICAL INSTRUCTIONS:\n"
             f"- You MUST ONLY search and provide guide information about {game}{f' version {version}' if version else ''}\n"
-            f"- IGNORE all results about other games\n"
+            "- IGNORE all results about other games\n"
             f"- If no {game} guide information is found, explicitly state 'No {game} guide information found'\n"
-            f"- DO NOT provide information about any other game, even if more results exist\n"
+            "- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} tutorials, guides, walkthroughs, and how-to content only\n\n"
             f"GUIDES SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} guides and tutorials.\n"
-            f"All answers must be relevant to this specific game's guides only.\n\n"
-        )
-        system_prompt_parts.append(game_context)
-
-        # Add guides-specific instructions
-        guides_instructions = (
+            "All answers must be relevant to this specific game's guides only.\n\n"
             "You are a specialist in gaming guides, tutorials, and walkthroughs. "
             "Provide detailed, step-by-step instructions, tips, strategies, and tutorials "
             "from your search results only. Focus on practical, actionable information "
@@ -313,9 +273,6 @@ class PerplexityClient:
             "If you cannot find reliable guide sources for specific information, clearly state "
             "what guide information could not be verified rather than providing potentially incorrect steps."
         )
-        system_prompt_parts.append(guides_instructions)
-
-        system_prompt = "".join(system_prompt_parts)
         messages.append({"role": "system", "content": system_prompt})
 
         # Add conversation history if provided
@@ -361,30 +318,22 @@ class PerplexityClient:
         # Build the message history
         messages = []
 
-        # Build system prompt with game context for builds
-        system_prompt_parts = []
-
-        # Add game-specific context (game is always provided)
+        # Build system prompt with integrated game context for builds
         context_parts = [f"Game: {game}"]
         if version:
             context_parts.append(f"Version: {version}")
 
-        game_context = (
-            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
+        system_prompt = (
+            "MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
             f"{' | '.join(context_parts)}\n\n"
-            f"CRITICAL INSTRUCTIONS:\n"
+            "CRITICAL INSTRUCTIONS:\n"
             f"- You MUST ONLY search and provide build information about {game}{f' version {version}' if version else ''}\n"
-            f"- IGNORE all results about other games\n"
+            "- IGNORE all results about other games\n"
             f"- If no {game} build information is found, explicitly state 'No {game} build information found'\n"
-            f"- DO NOT provide information about any other game, even if more results exist\n"
+            "- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} builds, loadouts, character optimization, and equipment setups only\n\n"
             f"BUILDS SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} builds and character optimization.\n"
-            f"All answers must be relevant to this specific game's builds only.\n\n"
-        )
-        system_prompt_parts.append(game_context)
-
-        # Add builds-specific instructions
-        builds_instructions = (
+            "All answers must be relevant to this specific game's builds only.\n\n"
             "You are a specialist in gaming builds, character optimization, and equipment setups. "
             "Provide detailed, optimized builds and loadouts from your search results only. "
             "Focus on effective character configurations, equipment choices, stat distributions, "
@@ -416,9 +365,6 @@ class PerplexityClient:
             "If you cannot find reliable build sources for specific information, clearly state "
             "what build information could not be verified rather than providing potentially suboptimal recommendations."
         )
-        system_prompt_parts.append(builds_instructions)
-
-        system_prompt = "".join(system_prompt_parts)
         messages.append({"role": "system", "content": system_prompt})
 
         # Add conversation history if provided
