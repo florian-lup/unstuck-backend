@@ -16,6 +16,7 @@ from schemas.gaming_guides import (
     SearchResult,
     UsageStats,
 )
+from utils import remove_think_tags
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,9 @@ class GamingGuidesService:
             # Extract response data
             choice = response.choices[0]
             assistant_content = choice.message.content
+            
+            # Clean the response content by removing think tags (for sonar-reasoning model)
+            assistant_content = remove_think_tags(assistant_content)
 
             # Parse search results
             search_results = []
