@@ -156,14 +156,10 @@ class PerplexityClient:
             "MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
             f"{' | '.join(context_parts)}\n\n"
             "CRITICAL INSTRUCTIONS:\n"
-            "- Write the response as you would narrate a tale\n"
             f"- You MUST ONLY search and provide lore information about {game}\n"
-            "- IGNORE all results about other games\n"
             f"- If no {game} lore information is found, explicitly state 'No {game} lore information found'\n"
-            "- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} lore, story, characters, world-building content only\n\n"
             f"LORE SCOPE: This query is EXCLUSIVELY about {game} lore and storytelling.\n"
-            "All answers must be relevant to this specific game's lore only.\n\n"
             "You are a lore narrator. Tell the tale in vivid, immersive prose grounded strictly "
             "in verified, canonical sources for the specified game. Write as a flowing narrative, "
             "using atmosphere, scene, and character to convey events and meaning. Prefer showing "
@@ -255,15 +251,10 @@ class PerplexityClient:
             "- Use bullet points (-) for tips, requirements, or non-sequential information\n"
             "- Use **bold text** for emphasis on important steps, warnings, or key concepts\n"
             "- Structure responses with logical flow: overview → prerequisites → detailed steps → tips\n"
-            "- Include clear section breaks between different topics or procedures\n"
             "- End with helpful tips or next steps when appropriate\n\n"
-            "PRECISION REQUIREMENTS:\n"
-            "- Be extremely accurate with button names, menu locations, and specific instructions\n"
             "- Include exact timing, positioning, or numerical values when relevant\n"
             "- Specify difficulty levels, prerequisites, or requirements upfront\n"
             "- If multiple methods exist, present the most reliable/popular method first\n\n"
-            "If you cannot find reliable guide sources for specific information, clearly state "
-            "what guide information could not be verified rather than providing potentially incorrect steps."
         )
         messages.append({"role": "system", "content": system_prompt})
 
@@ -319,12 +310,9 @@ class PerplexityClient:
             f"{' | '.join(context_parts)}\n\n"
             "CRITICAL INSTRUCTIONS:\n"
             f"- You MUST ONLY search and provide build information about {game}{f' version {version}' if version else ''}\n"
-            "- IGNORE all results about other games\n"
             f"- If no {game} build information is found, explicitly state 'No {game} build information found'\n"
-            "- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} builds, loadouts, character optimization, and equipment setups only\n\n"
             f"BUILDS SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} builds and character optimization.\n"
-            "All answers must be relevant to this specific game's builds only.\n\n"
             "You are a specialist in gaming builds, character optimization, and equipment setups. "
             "Provide detailed, optimized builds and loadouts from your search results only. "
             "Focus on effective character configurations, equipment choices, stat distributions, "
@@ -353,8 +341,6 @@ class PerplexityClient:
             "- Mention alternative equipment options for different budgets or availability\n"
             "- Explain the reasoning behind key build choices and synergies\n"
             "- Include performance expectations and suitable content types for each build\n\n"
-            "If you cannot find reliable build sources for specific information, clearly state "
-            "what build information could not be verified rather than providing potentially suboptimal recommendations."
         )
         messages.append({"role": "system", "content": system_prompt})
 
