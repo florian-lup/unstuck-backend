@@ -218,6 +218,109 @@ class PerplexityClient:
             **kwargs,
         )
 
+    def gaming_guides(
+        self,
+        query: str,
+        game: str,
+        conversation_history: list[dict[str, Any]] | None = None,
+        version: str | None = None,
+        model: str = "sonar-reasoning",
+        search_context_size: str = "high",
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Perform a gaming guides-specific search query.
+
+        Args:
+            query: The search query about gaming guides/tutorials
+            game: The specific game name to provide context for (required)
+            conversation_history: Previous messages in the conversation
+            version: The game version to provide context for (optional)
+            model: The model to use (default: "sonar")
+            search_context_size: Context size for web search ("low", "medium", "high", default: "high")
+            **kwargs: Additional parameters
+
+        Returns:
+            Chat completion response with gaming guides information
+        """
+        # Build the message history
+        messages = []
+
+        # Build system prompt with game context for guides
+        system_prompt_parts = []
+
+        # Add game-specific context (game is always provided)
+        context_parts = [f"Game: {game}"]
+        if version:
+            context_parts.append(f"Version: {version}")
+
+        game_context = (
+            f"MANDATORY GAME CONTEXT - MUST BE FOLLOWED:\n"
+            f"{' | '.join(context_parts)}\n\n"
+            f"CRITICAL INSTRUCTIONS:\n"
+            f"- You MUST ONLY search and provide guide information about {game}{f' version {version}' if version else ''}\n"
+            f"- IGNORE all results about other games\n"
+            f"- If no {game} guide information is found, explicitly state 'No {game} guide information found'\n"
+            f"- DO NOT provide information about any other game, even if more results exist\n"
+            f"- When searching, focus specifically on {game} tutorials, guides, walkthroughs, and how-to content only\n\n"
+            f"GUIDES SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} guides and tutorials.\n"
+            f"All answers must be relevant to this specific game's guides only.\n\n"
+        )
+        system_prompt_parts.append(game_context)
+
+        # Add guides-specific instructions
+        guides_instructions = (
+            "You are a specialist in gaming guides, tutorials, and walkthroughs. "
+            "Provide detailed, step-by-step instructions, tips, strategies, and tutorials "
+            "from your search results only. Focus on practical, actionable information "
+            "that helps players accomplish specific goals, overcome challenges, or learn game mechanics.\n\n"
+            "GUIDES FOCUS AREAS:\n"
+            "- **Step-by-Step Tutorials**: Clear, numbered instructions for completing tasks\n"
+            "- **Tips & Strategies**: Effective approaches, tactics, and techniques\n"
+            "- **Walkthroughs**: Complete guides for levels, quests, or storylines\n"
+            "- **Game Mechanics**: How systems work, controls, and gameplay features\n"
+            "- **Troubleshooting**: Solutions for common problems or difficult sections\n"
+            "- **Optimization**: Best practices, efficiency tips, and performance advice\n"
+            "- **Builds & Loadouts**: Character builds, equipment setups, skill trees\n"
+            "- **Collectibles & Secrets**: Locations of hidden items, easter eggs, achievements\n\n"
+            "FORMATTING RULES:\n"
+            "- NEVER create tables, charts, or comparison tables\n"
+            "- Use clear markdown formatting with headers (##, ###) to organize guide sections\n"
+            "- Use numbered lists (1., 2., 3.) for step-by-step instructions and sequential processes\n"
+            "- Use bullet points (-) for tips, requirements, or non-sequential information\n"
+            "- Use **bold text** for emphasis on important steps, warnings, or key concepts\n"
+            "- Structure responses with logical flow: overview → prerequisites → detailed steps → tips\n"
+            "- Include clear section breaks between different topics or procedures\n"
+            "- Use > blockquotes for important warnings or critical information\n"
+            "- End with helpful tips or next steps when appropriate\n\n"
+            "PRECISION REQUIREMENTS:\n"
+            "- Be extremely accurate with button names, menu locations, and specific instructions\n"
+            "- Include exact timing, positioning, or numerical values when relevant\n"
+            "- Specify difficulty levels, prerequisites, or requirements upfront\n"
+            "- If multiple methods exist, present the most reliable/popular method first\n\n"
+            "If you cannot find reliable guide sources for specific information, clearly state "
+            "what guide information could not be verified rather than providing potentially incorrect steps."
+        )
+        system_prompt_parts.append(guides_instructions)
+
+        system_prompt = "".join(system_prompt_parts)
+        messages.append({"role": "system", "content": system_prompt})
+
+        # Add conversation history if provided
+        if conversation_history:
+            messages.extend(conversation_history)
+
+        # Add the current user query with game guides context reinforcement
+        enhanced_query = f"Show me how to do this in {game}{f' version {version}' if version else ''}: {query}"
+        messages.append({"role": "user", "content": enhanced_query})
+
+        return self.chat_completion(
+            messages=messages,
+            model=model,
+            search_context_size=search_context_size,
+            **kwargs,
+        )
+
     def search(
         self,
         query: str | list[str],

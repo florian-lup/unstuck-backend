@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from api.routes import auth as auth_routes
 from api.routes import gaming_chat as gaming_routes
+from api.routes import gaming_guides as gaming_guides_routes
 from api.routes import gaming_lore as gaming_lore_routes
 from api.routes import health as health_routes
 from core.config import settings
@@ -200,6 +201,9 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         gaming_lore_routes.router, prefix="/api/v1/gaming", tags=["Gaming Lore"]
+    )
+    app.include_router(
+        gaming_guides_routes.router, prefix="/api/v1/gaming", tags=["Gaming Guides"]
     )
 
     return app
