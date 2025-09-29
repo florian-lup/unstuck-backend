@@ -18,9 +18,9 @@ class PerplexityClient:
     def chat_completion(
         self,
         messages: list[dict[str, Any]],
-        model: str = "sonar",
-        temperature: float = 0.2,
-        search_context_size: str = "low",
+        model: str,
+        temperature: float,
+        search_context_size: str,
         **kwargs: Any,
     ) -> Any:
         """
@@ -28,8 +28,8 @@ class PerplexityClient:
 
         Args:
             messages: List of conversation messages
-            model: The model to use (default: "sonar")
-            temperature: Response randomness (0-2, default: 0.2)
+            model: The model to use
+            temperature: Response randomness (0-2)
             search_context_size: Context size for web search ("low", "medium", "high")
             **kwargs: Additional parameters for the API
 
@@ -54,6 +54,9 @@ class PerplexityClient:
         game: str,
         conversation_history: list[dict[str, Any]] | None = None,
         version: str | None = None,
+        model: str = "sonar",
+        temperature: float = 0.2,
+        search_context_size: str = "low",
         **kwargs: Any,
     ) -> Any:
         """
@@ -64,6 +67,9 @@ class PerplexityClient:
             game: The specific game name to provide context for (required)
             conversation_history: Previous messages in the conversation
             version: The game version to provide context for (optional)
+            model: The model to use (default: "sonar")
+            temperature: Response randomness (0-2, default: 0.2)
+            search_context_size: Context size for web search ("low", "medium", "high", default: "low")
             **kwargs: Additional parameters
 
         Returns:
@@ -124,6 +130,9 @@ class PerplexityClient:
 
         return self.chat_completion(
             messages=messages,
+            model=model,
+            temperature=temperature,
+            search_context_size=search_context_size,
             **kwargs,
         )
 
@@ -225,7 +234,7 @@ class PerplexityClient:
         conversation_history: list[dict[str, Any]] | None = None,
         version: str | None = None,
         model: str = "sonar-reasoning",
-        search_context_size: str = "high",
+        search_context_size: str = "low",
         **kwargs: Any,
     ) -> Any:
         """
