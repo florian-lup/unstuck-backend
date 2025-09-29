@@ -106,9 +106,8 @@ class PerplexityClient:
         if conversation_history:
             messages.extend(conversation_history)
 
-        # Add the current user query with game context reinforcement
-        enhanced_query = f"In {game}{f' version {version}' if version else ''}: {query}"
-        messages.append({"role": "user", "content": enhanced_query})
+        # Add the current user query (game context is already enforced in system prompt)
+        messages.append({"role": "user", "content": query})
 
         return self.chat_completion(
             messages=messages,
@@ -186,9 +185,8 @@ class PerplexityClient:
         if conversation_history:
             messages.extend(conversation_history)
 
-        # Add the current user query with game lore context reinforcement
-        enhanced_query = f"Narrate the tale of {game}: {query}"
-        messages.append({"role": "user", "content": enhanced_query})
+        # Add the current user query (game context is already enforced in system prompt)
+        messages.append({"role": "user", "content": query})
 
         return self.chat_completion(
             messages=messages,
@@ -236,12 +234,9 @@ class PerplexityClient:
             f"{' | '.join(context_parts)}\n\n"
             "CRITICAL INSTRUCTIONS:\n"
             f"- You MUST ONLY search and provide guide information about {game}{f' version {version}' if version else ''}\n"
-            "- IGNORE all results about other games\n"
             f"- If no {game} guide information is found, explicitly state 'No {game} guide information found'\n"
-            "- DO NOT provide information about any other game, even if more results exist\n"
             f"- When searching, focus specifically on {game} tutorials, guides, walkthroughs, and how-to content only\n\n"
             f"GUIDES SCOPE: This query is EXCLUSIVELY about {game}{f' version {version}' if version else ''} guides and tutorials.\n"
-            "All answers must be relevant to this specific game's guides only.\n\n"
             "You are a specialist in gaming guides, tutorials, and walkthroughs. "
             "Provide detailed, step-by-step instructions, tips, strategies, and tutorials "
             "from your search results only. Focus on practical, actionable information "
@@ -251,9 +246,7 @@ class PerplexityClient:
             "- **Tips & Strategies**: Effective approaches, tactics, and techniques\n"
             "- **Walkthroughs**: Complete guides for levels, quests, or storylines\n"
             "- **Game Mechanics**: How systems work, controls, and gameplay features\n"
-            "- **Troubleshooting**: Solutions for common problems or difficult sections\n"
             "- **Optimization**: Best practices, efficiency tips, and performance advice\n"
-            "- **Builds & Loadouts**: Character builds, equipment setups, skill trees\n"
             "- **Collectibles & Secrets**: Locations of hidden items, easter eggs, achievements\n\n"
             "FORMATTING RULES:\n"
             "- NEVER create tables, charts, or comparison tables\n"
@@ -263,7 +256,6 @@ class PerplexityClient:
             "- Use **bold text** for emphasis on important steps, warnings, or key concepts\n"
             "- Structure responses with logical flow: overview → prerequisites → detailed steps → tips\n"
             "- Include clear section breaks between different topics or procedures\n"
-            "- Use > blockquotes for important warnings or critical information\n"
             "- End with helpful tips or next steps when appropriate\n\n"
             "PRECISION REQUIREMENTS:\n"
             "- Be extremely accurate with button names, menu locations, and specific instructions\n"
@@ -279,9 +271,8 @@ class PerplexityClient:
         if conversation_history:
             messages.extend(conversation_history)
 
-        # Add the current user query with game guides context reinforcement
-        enhanced_query = f"Show me how to do this in {game}{f' version {version}' if version else ''}: {query}"
-        messages.append({"role": "user", "content": enhanced_query})
+        # Add the current user query (game context is already enforced in system prompt)
+        messages.append({"role": "user", "content": query})
 
         return self.chat_completion(
             messages=messages,
@@ -371,9 +362,8 @@ class PerplexityClient:
         if conversation_history:
             messages.extend(conversation_history)
 
-        # Add the current user query with game builds context reinforcement
-        enhanced_query = f"Show me optimal builds for {game}{f' version {version}' if version else ''}: {query}"
-        messages.append({"role": "user", "content": enhanced_query})
+        # Add the current user query (game context is already enforced in system prompt)
+        messages.append({"role": "user", "content": query})
 
         return self.chat_completion(
             messages=messages,
