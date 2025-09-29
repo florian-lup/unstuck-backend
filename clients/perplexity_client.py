@@ -19,8 +19,8 @@ class PerplexityClient:
         self,
         messages: list[dict[str, Any]],
         model: str,
-        temperature: float,
         search_context_size: str,
+        temperature: float | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -29,8 +29,8 @@ class PerplexityClient:
         Args:
             messages: List of conversation messages
             model: The model to use
-            temperature: Response randomness (0-2)
             search_context_size: Context size for web search ("low", "medium", "high")
+            temperature: Response randomness (0-2, optional)
             **kwargs: Additional parameters for the API
 
         Returns:
@@ -41,10 +41,13 @@ class PerplexityClient:
         params = {
             "model": model,
             "messages": messages,
-            "temperature": temperature,
             "web_search_options": web_search_options,
             **kwargs,
         }
+        
+        # Only include temperature if provided
+        if temperature is not None:
+            params["temperature"] = temperature
 
         return self._client.chat.completions.create(**params)
 
