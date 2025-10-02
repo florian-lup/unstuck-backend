@@ -49,11 +49,11 @@ class DatabaseService:
 
             if user:
                 # Update last active time and any new info
-                user.last_active_at = datetime.utcnow()  # type: ignore[assignment]
+                user.last_active_at = datetime.utcnow()
                 if username and user.username != username:
-                    user.username = username  # type: ignore[assignment]
+                    user.username = username
                 if email and user.email != email:
-                    user.email = email  # type: ignore[assignment]
+                    user.email = email
                 await self.db.commit()
                 return user
             # Create new user
@@ -95,8 +95,8 @@ class DatabaseService:
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
-            user.preferences = preferences  # type: ignore[assignment]
-            user.updated_at = datetime.utcnow()  # type: ignore[assignment]
+            user.preferences = preferences
+            user.updated_at = datetime.utcnow()
             await self.db.commit()
             return user
 

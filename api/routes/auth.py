@@ -1,7 +1,6 @@
 """Authentication and user management routes."""
 
 import time
-from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
@@ -40,7 +39,7 @@ async def get_user_info(
     # Get user's conversation count
     service = GamingChatService(db_session)
     conversations = await service.get_user_conversations(
-        user_id=cast(UUID, internal_user.id),
+        user_id=internal_user.id,
         limit=1000,  # Get all for count
     )
     conversation_count = len(conversations)

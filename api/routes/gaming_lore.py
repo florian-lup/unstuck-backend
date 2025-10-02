@@ -1,6 +1,6 @@
 """Gaming Lore API routes with database-backed authentication."""
 
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -54,7 +54,7 @@ async def gaming_lore(
         # Perform search with user authentication
         return await service.search(
             request=request_data,
-            user_id=cast(UUID, internal_user.id),
+            user_id=internal_user.id,
             auth0_user_id=current_user.user_id,
         )
 
@@ -95,7 +95,7 @@ async def list_lore_conversations(
         service = GamingLoreService(db_session)
 
         conversations = await service.get_user_conversations(
-            user_id=cast(UUID, internal_user.id), limit=limit
+            user_id=internal_user.id, limit=limit
         )
 
         return {"conversations": conversations, "total": len(conversations)}
@@ -141,7 +141,7 @@ async def get_lore_conversation_history(
 
         # Get conversation messages (includes security check)
         messages = await service.get_conversation_history(
-            conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
+            conversation_id=conversation_id, user_id=internal_user.id
         )
 
         if not messages:
@@ -211,7 +211,7 @@ async def update_lore_conversation_title(
 
         success = await service.update_conversation_title(
             conversation_id=conversation_id,
-            user_id=cast(UUID, internal_user.id),
+            user_id=internal_user.id,
             title=new_title,
         )
 
@@ -271,7 +271,7 @@ async def archive_lore_conversation(
         service = GamingLoreService(db_session)
 
         success = await service.archive_conversation(
-            conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
+            conversation_id=conversation_id, user_id=internal_user.id
         )
 
         if not success:
@@ -333,7 +333,7 @@ async def delete_lore_conversation(
         service = GamingLoreService(db_session)
 
         success = await service.delete_conversation(
-            conversation_id=conversation_id, user_id=cast(UUID, internal_user.id)
+            conversation_id=conversation_id, user_id=internal_user.id
         )
 
         if not success:
