@@ -1,10 +1,12 @@
 """Database models for the gaming AI chat overlay."""
 
 import uuid
+from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 
@@ -18,29 +20,39 @@ class User(Base):
     __tablename__ = "users"
 
     # Primary key - UUID for security (prevents enumeration attacks)
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Auth0 integration - this links to your Auth0 user
-    auth0_user_id = Column(String(255), unique=True, nullable=False, index=True)
+    auth0_user_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
 
     # User metadata (optional)
-    username = Column(String(100))  # Display name from Auth0 or custom
-    email = Column(String(320))  # Email from Auth0 (for support purposes)
+    username: Mapped[Optional[str]] = mapped_column(String(100))  # Display name from Auth0 or custom
+    email: Mapped[Optional[str]] = mapped_column(String(320))  # Email from Auth0 (for support purposes)
+
+    # Subscription fields
+    subscription_tier: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="free"
+    )  # 'free' or 'pro'
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)  # Stripe customer ID
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(String(255))  # Current active subscription ID
+    subscription_status: Mapped[Optional[str]] = mapped_column(
+        String(50)
+    )  # active, canceled, past_due, etc. (mirrors Stripe status)
 
     # Audit timestamps
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
-    last_active_at = Column(DateTime(timezone=True))
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # User preferences (stored as JSON for flexibility)
-    preferences = Column(JSONB, default=dict)
+    preferences: Mapped[Optional[dict]] = mapped_column(JSONB, default=dict)
 
     # Relationships
     conversations = relationship(

@@ -56,6 +56,27 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
+    # Stripe Configuration
+    stripe_api_key: str = Field(
+        ..., description="Stripe secret API key", alias="STRIPE_API_KEY"
+    )
+    stripe_webhook_secret: str = Field(
+        ..., description="Stripe webhook signing secret", alias="STRIPE_WEBHOOK_SECRET"
+    )
+    stripe_price_id_pro: str = Field(
+        ..., description="Stripe price ID for Pro tier", alias="STRIPE_PRICE_ID_PRO"
+    )
+    stripe_success_url: str = Field(
+        default="http://localhost:3000/subscription/success",
+        description="Checkout success redirect URL",
+        alias="STRIPE_SUCCESS_URL",
+    )
+    stripe_cancel_url: str = Field(
+        default="http://localhost:3000/subscription/cancel",
+        description="Checkout cancel redirect URL",
+        alias="STRIPE_CANCEL_URL",
+    )
+
     # Database Configuration (Neon PostgreSQL)
     database_url: str = Field(
         ...,

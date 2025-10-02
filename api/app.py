@@ -16,6 +16,7 @@ from api.routes import gaming_chat as gaming_routes
 from api.routes import gaming_guides as gaming_guides_routes
 from api.routes import gaming_lore as gaming_lore_routes
 from api.routes import health as health_routes
+from api.routes import subscription as subscription_routes
 from core.config import settings
 from schemas.auth import AuthError
 
@@ -196,6 +197,11 @@ def create_app() -> FastAPI:
     app.include_router(health_routes.router, prefix="/api/v1", tags=["Health"])
     app.include_router(
         auth_routes.router, prefix="/api/v1/auth", tags=["Authentication"]
+    )
+    app.include_router(
+        subscription_routes.router,
+        prefix="/api/v1/subscription",
+        tags=["Subscription"],
     )
     app.include_router(
         gaming_routes.router, prefix="/api/v1/gaming", tags=["Gaming Chat"]
