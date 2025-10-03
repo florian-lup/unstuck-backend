@@ -176,6 +176,63 @@ class DatabaseService:
             logger.error(f"Error getting user {user_id}: {e}")
             raise
 
+    async def handle_subscription_tier_change(
+        self, user_id: UUID, new_tier: str, old_tier: str | None = None
+    ) -> User:
+        """
+        Handle subscription tier changes and reset appropriate counters.
+
+        Args:
+            user_id: User ID
+            new_tier: New subscription tier ("free", "community", etc.)
+            old_tier: Previous subscription tier (optional)
+
+        Returns:
+            User: Updated user record
+        """
+        try:
+            query = select(User).where(User.id == user_id)
+            result = await self.db.execute(query)
+            user = result.scalar_one_or_none()
+
+            if not user:
+                raise ValueError(f"User {user_id} not found")
+
+            old_tier = old_tier or user.subscription_tier
+
+            # Update tier
+            user.subscription_tier = new_tier
+
+            # Handle tier-specific resets
+            if new_tier == "free":
+                # Downgrading to free: Reset total_requests to 0
+                logger.info(f"User {user_id} downgraded to free tier, resetting counters")
+                user.total_requests = 0
+                user.monthly_requests = 0
+                user.request_count_reset_date = None
+
+            elif new_tier == "community" and old_tier == "free":
+                # Upgrading from free to community: Keep total_requests, reset monthly
+                logger.info(f"User {user_id} upgraded to community tier")
+                user.monthly_requests = 0
+                user.request_count_reset_date = datetime.utcnow()
+
+            elif new_tier == "community" and old_tier != "free":
+                # Switching to community from another tier: Reset monthly counter
+                logger.info(f"User {user_id} switched to community tier")
+                user.monthly_requests = 0
+                user.request_count_reset_date = datetime.utcnow()
+
+            user.updated_at = datetime.utcnow()
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
+
+        except Exception as e:
+            logger.error(f"Error handling subscription tier change: {e}")
+            await self.db.rollback()
+            raise
+
     # ==================== CONVERSATION MANAGEMENT ====================
 
     def generate_title_from_query(

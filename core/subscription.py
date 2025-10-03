@@ -105,7 +105,12 @@ def _check_feature_access(user: User, feature: str) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
                 "error": "feature_access_denied",
-                "message": f"Access to {feature} is not available for {tier} tier users",
+                "message": (
+                    "**Agents will be available exclusively for Pro tier users.**\n\n"
+                    "In the meantime enjoy gaming chat on **Free tier** (150 lifetime requests), "
+                    "upgrade to **Community** for 300 monthly requests.\n\n"
+                    "• Pro tier coming soon with exclusive features"
+                ),
                 "feature": feature,
                 "current_tier": tier,
                 "upgrade_required": True,
@@ -133,7 +138,14 @@ def _check_request_limit(user: User) -> None:
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
                     "error": "request_limit_exceeded",
-                    "message": f"You have reached your lifetime limit of {max_requests} requests",
+                    "message": (
+                        f"You've used all **{max_requests} gaming chat requests** on the **{tier} tier**.\n\n"
+                        "✨ **Upgrade to Community tier to continue chatting:**\n"
+                        "• 300 gaming chat requests per month\n"
+                        "• Monthly limit resets automatically\n"
+                        "• Support development of Unstuck\n\n"
+                        "💡 *Click the settings icon and select \"Upgrade Subscription\" to continue!*"
+                    ),
                     "current_requests": user.total_requests,
                     "max_requests": max_requests,
                     "tier": tier,
@@ -158,11 +170,20 @@ def _check_request_limit(user: User) -> None:
             elif user.monthly_requests >= max_monthly:
                 # Exceeded monthly limit
                 days_until_reset = 30 - days_since_reset
+                reset_date_str = user.request_count_reset_date.strftime("%B %d, %Y") if user.request_count_reset_date else "soon"
+                day_text = "day" if days_until_reset == 1 else "days"
+                
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail={
                         "error": "monthly_request_limit_exceeded",
-                        "message": f"You have reached your monthly limit of {max_monthly} requests",
+                        "message": (
+                            f"You've used all **{max_monthly} gaming chat requests** this month on the **{tier} tier**.\n\n"
+                            f"⏰ Your limit will reset in **{days_until_reset} {day_text}** (on {reset_date_str}).\n\n"
+                            "✨ **Or upgrade to Pro tier for unlimited gaming chat:**\n"
+                            "• Unlimited requests every month\n"
+                            "• Exclusive features (coming soon)"
+                        ),
                         "current_requests": user.monthly_requests,
                         "max_requests": max_monthly,
                         "tier": tier,

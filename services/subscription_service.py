@@ -124,10 +124,21 @@ class SubscriptionService:
         user = result.scalar_one_or_none()
 
         if user:
+            old_tier = user.subscription_tier
             user.stripe_subscription_id = subscription_id
-            user.subscription_tier = "community"
             user.subscription_status = "active"
-            await self.db_session.commit()
+            
+            # Handle tier change with proper counter resets
+            if old_tier != "community":
+                from database.service import DatabaseService
+                db_service = DatabaseService(self.db_session)
+                await db_service.handle_subscription_tier_change(
+                    user_id=user.id,
+                    new_tier="community",
+                    old_tier=old_tier
+                )
+            else:
+                await self.db_session.commit()
 
     async def handle_subscription_updated(self, subscription: dict) -> None:
         """
@@ -149,18 +160,32 @@ class SubscriptionService:
         if not user:
             return
 
+        # Store old tier for comparison
+        old_tier = user.subscription_tier
+
         # Update subscription status
         status = subscription.get("status")
         user.subscription_status = status
         user.stripe_subscription_id = subscription.get("id")
 
-        # Update tier based on status
+        # Determine new tier based on status
+        new_tier = old_tier
         if status in ["active", "trialing"]:
-            user.subscription_tier = "community"
+            new_tier = "community"
         elif status in ["canceled", "incomplete_expired", "past_due", "unpaid"]:
-            user.subscription_tier = "free"
+            new_tier = "free"
 
-        await self.db_session.commit()
+        # Handle tier change with proper counter resets
+        if new_tier != old_tier:
+            from database.service import DatabaseService
+            db_service = DatabaseService(self.db_session)
+            await db_service.handle_subscription_tier_change(
+                user_id=user.id,
+                new_tier=new_tier,
+                old_tier=old_tier
+            )
+        else:
+            await self.db_session.commit()
 
     async def handle_subscription_deleted(self, subscription: dict) -> None:
         """
@@ -182,9 +207,19 @@ class SubscriptionService:
         if not user:
             return
 
-        # Downgrade to free tier
-        user.subscription_tier = "free"
+        # Store old tier for logging
+        old_tier = user.subscription_tier
+
+        # Update subscription metadata
         user.subscription_status = "canceled"
         user.stripe_subscription_id = None
-        await self.db_session.commit()
+
+        # Downgrade to free tier with proper counter resets
+        from database.service import DatabaseService
+        db_service = DatabaseService(self.db_session)
+        await db_service.handle_subscription_tier_change(
+            user_id=user.id,
+            new_tier="free",
+            old_tier=old_tier
+        )
 
