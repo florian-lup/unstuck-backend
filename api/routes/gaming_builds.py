@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.auth import get_current_user
 from core.rate_limit import RateLimited
+from core.subscription import check_builds_access, get_request_limit_info
 from database.connection import get_db_session
+from database.models import User
 from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser
 from schemas.gaming_builds import (
@@ -16,6 +18,7 @@ from schemas.gaming_builds import (
     GamingBuildsRequest,
     GamingBuildsResponse,
 )
+from schemas.gaming_chat import RequestLimitInfo
 from services.gaming_builds_service import GamingBuildsService
 
 router = APIRouter()
@@ -25,7 +28,7 @@ router = APIRouter()
 async def gaming_builds(
     request_data: GamingBuildsRequest,
     request: Request,
-    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    internal_user: User = Depends(check_builds_access),  # noqa: B008
     db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
 ) -> GamingBuildsResponse:
@@ -35,27 +38,36 @@ async def gaming_builds(
     Searches for gaming builds, character optimization, loadouts, and equipment setups
     using AI with conversation context. All conversations and messages are stored
     securely in the database. Requires authentication via Auth0 JWT token.
+
+    Access Requirements:
+    - This feature is restricted to premium tier users
+    - Free and Community tier users will receive a 403 error
+    - This endpoint does NOT count towards chat request limits
     """
     try:
+        # User access already checked by check_builds_access dependency
+        # Note: This endpoint does NOT increment request counters
         # Store user ID in request state for rate limiting
-        request.state.user_id = current_user.user_id
-
-        # Get internal user record (creates if doesn't exist)
-        db_service = DatabaseService(db_session)
-        internal_user = await db_service.get_or_create_user(
-            auth0_user_id=current_user.user_id,
-            email=current_user.email,
-            username=current_user.name,
-        )
+        request.state.user_id = internal_user.auth0_user_id
 
         # Create service instance with database session
         service = GamingBuildsService(db_session)
+
+        # Get request limit information
+        limit_info = get_request_limit_info(internal_user)
+        request_limit_info = RequestLimitInfo(
+            remaining_requests=limit_info["remaining_requests"],  # type: ignore
+            max_requests=limit_info["max_requests"],  # type: ignore
+            limit_type=limit_info["limit_type"],  # type: ignore
+            reset_date=limit_info["reset_date"],  # type: ignore
+        )
 
         # Perform search with user authentication
         return await service.search(
             request=request_data,
             user_id=internal_user.id,
-            auth0_user_id=current_user.user_id,
+            auth0_user_id=internal_user.auth0_user_id,
+            request_limit_info=request_limit_info,
         )
 
     except Exception as e:

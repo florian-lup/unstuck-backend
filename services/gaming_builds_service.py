@@ -13,6 +13,7 @@ from schemas.common import ConversationMessage
 from schemas.gaming_builds import (
     GamingBuildsRequest,
     GamingBuildsResponse,
+    RequestLimitInfo,
     SearchResult,
     UsageStats,
 )
@@ -29,7 +30,7 @@ class GamingBuildsService:
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingBuildsRequest, user_id: UUID, auth0_user_id: str
+        self, request: GamingBuildsRequest, user_id: UUID, auth0_user_id: str, request_limit_info: "RequestLimitInfo"
     ) -> GamingBuildsResponse:
         """
         Perform a Gaming Builds search with conversation context.
@@ -38,6 +39,7 @@ class GamingBuildsService:
             request: Gaming Builds request
             user_id: User ID from Auth0 token (for security)
             auth0_user_id: Auth0 user identifier
+            request_limit_info: Request limit information for the user
 
         Returns:
             Gaming Builds response
@@ -197,6 +199,7 @@ class GamingBuildsService:
                 search_results=search_results,
                 usage=usage_stats,
                 finish_reason=getattr(choice, "finish_reason", None),
+                request_limit_info=request_limit_info,
             )
 
         except Exception as e:

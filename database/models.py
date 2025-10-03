@@ -38,6 +38,17 @@ class User(Base):
         String(50)
     )  # active, canceled, past_due, etc. (mirrors Stripe status)
 
+    # Request tracking fields for subscription limits
+    total_requests: Mapped[int] = mapped_column(
+        nullable=False, default=0
+    )  # Total lifetime requests (for free tier)
+    monthly_requests: Mapped[int] = mapped_column(
+        nullable=False, default=0
+    )  # Monthly requests (for community tier)
+    request_count_reset_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )  # Date when monthly counter was last reset
+
     # Audit timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

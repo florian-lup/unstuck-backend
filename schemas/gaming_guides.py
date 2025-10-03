@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from schemas.common import ConversationMessage
+from schemas.gaming_chat import RequestLimitInfo
 
 
 class GamingGuidesRequest(BaseModel):
@@ -71,6 +72,9 @@ class GamingGuidesResponse(BaseModel):
     usage: UsageStats | None = Field(default=None, description="Token usage statistics")
     finish_reason: str | None = Field(
         default=None, description="Reason the generation finished"
+    )
+    request_limit_info: RequestLimitInfo = Field(
+        ..., description="Request limit information for user's tier"
     )
 
 

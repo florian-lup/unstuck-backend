@@ -105,6 +105,77 @@ class DatabaseService:
             await self.db.rollback()
             raise
 
+    async def increment_user_requests(self, user_id: UUID) -> User:
+        """
+        Increment user request counters.
+
+        For free tier: increments total_requests (lifetime)
+        For community tier: increments monthly_requests (resets monthly)
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            User: Updated user record
+        """
+        try:
+            query = select(User).where(User.id == user_id)
+            result = await self.db.execute(query)
+            user = result.scalar_one_or_none()
+
+            if not user:
+                raise ValueError(f"User {user_id} not found")
+
+            # Increment total requests for all tiers
+            user.total_requests += 1
+
+            # For community tier, also track monthly requests
+            if user.subscription_tier == "community":
+                current_time = datetime.utcnow()
+
+                # Initialize or check if we need to reset monthly counter
+                if user.request_count_reset_date is None:
+                    # First time tracking monthly requests
+                    user.monthly_requests = 1
+                    user.request_count_reset_date = current_time
+                else:
+                    # Check if a month has passed since last reset
+                    days_since_reset = (current_time - user.request_count_reset_date).days
+                    if days_since_reset >= 30:  # Reset every 30 days
+                        user.monthly_requests = 1
+                        user.request_count_reset_date = current_time
+                    else:
+                        user.monthly_requests += 1
+
+            user.updated_at = datetime.utcnow()
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
+
+        except Exception as e:
+            logger.error(f"Error incrementing user requests: {e}")
+            await self.db.rollback()
+            raise
+
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
+        """
+        Get user by internal ID.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            User: User record or None if not found
+        """
+        try:
+            query = select(User).where(User.id == user_id)
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+
+        except Exception as e:
+            logger.error(f"Error getting user {user_id}: {e}")
+            raise
+
     # ==================== CONVERSATION MANAGEMENT ====================
 
     def generate_title_from_query(

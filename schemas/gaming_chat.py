@@ -56,6 +56,17 @@ class UsageStats(BaseModel):
     )
 
 
+class RequestLimitInfo(BaseModel):
+    """Request limit information for the user's subscription tier."""
+
+    remaining_requests: int = Field(..., description="Number of requests remaining")
+    max_requests: int = Field(..., description="Maximum requests allowed")
+    limit_type: str = Field(..., description="Type of limit: 'lifetime' or 'monthly'")
+    reset_date: str | None = Field(
+        default=None, description="ISO date when monthly limit resets (monthly tier only)"
+    )
+
+
 class GamingChatResponse(BaseModel):
     """Response schema for Gaming Chat queries."""
 
@@ -72,6 +83,9 @@ class GamingChatResponse(BaseModel):
     usage: UsageStats | None = Field(default=None, description="Token usage statistics")
     finish_reason: str | None = Field(
         default=None, description="Reason the generation finished"
+    )
+    request_limit_info: RequestLimitInfo = Field(
+        ..., description="Request limit information for user's tier"
     )
 
 
