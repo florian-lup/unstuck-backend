@@ -101,12 +101,27 @@ class GamingChatService:
                     if msg.role != "system"
                 ]
 
-            # Call Perplexity API
+            # Get user to determine subscription tier
+            user = await self.db_service.get_user_by_id(user_id)
+            if not user:
+                raise RuntimeError("User not found")
+            
+            # Set model and search context based on subscription tier
+            if user.subscription_tier == "community":
+                model = "sonar-pro"
+                search_context_size = "medium"
+            else:  # free tier
+                model = "sonar"
+                search_context_size = "low"
+            
+            # Call Perplexity API with tier-based parameters
             response = perplexity_client.gaming_chat(
                 query=request.query,
                 game=request.game,
                 conversation_history=conversation_history,
                 version=request.version,
+                model=model,
+                search_context_size=search_context_size,
             )
 
             # Extract response data
