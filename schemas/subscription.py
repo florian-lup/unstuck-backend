@@ -26,7 +26,7 @@ class CancelSubscriptionResponse(BaseModel):
 class SubscriptionStatusResponse(BaseModel):
     """User subscription status."""
 
-    subscription_tier: str = Field(..., description="Current subscription tier (free/pro)")
+    subscription_tier: str = Field(..., description="Current subscription tier (free/community)")
     subscription_status: str | None = Field(
         None, description="Stripe subscription status"
     )

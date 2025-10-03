@@ -9,26 +9,26 @@ from database.service import DatabaseService
 from schemas.auth import AuthenticatedUser
 
 
-async def require_pro_subscription(
+async def require_community_subscription(
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
     db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
 ) -> AuthenticatedUser:
     """
-    Dependency that requires the user to have an active Pro subscription.
+    Dependency that requires the user to have an active Community subscription.
 
     Raises:
-        HTTPException: If user does not have Pro subscription
+        HTTPException: If user does not have Community subscription
 
     Returns:
-        AuthenticatedUser: The authenticated user with Pro subscription
+        AuthenticatedUser: The authenticated user with Community subscription
 
     Usage:
-        @router.get("/pro-feature")
-        async def pro_only_feature(
-            user: AuthenticatedUser = Depends(require_pro_subscription)
+        @router.get("/community-feature")
+        async def community_only_feature(
+            user: AuthenticatedUser = Depends(require_community_subscription)
         ):
-            # This endpoint is only accessible to Pro users
-            return {"feature": "pro-only"}
+            # This endpoint is only accessible to Community users
+            return {"feature": "community-only"}
     """
     # Get user from database
     db_service = DatabaseService(db_session)
@@ -39,10 +39,10 @@ async def require_pro_subscription(
     )
 
     # Check subscription tier
-    if user.subscription_tier != "pro":
+    if user.subscription_tier != "community":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This feature requires a Pro subscription",
+            detail="This feature requires a Community subscription",
         )
 
     return current_user
@@ -56,14 +56,14 @@ async def get_user_subscription_tier(
     Get the current user's subscription tier.
 
     Returns:
-        str: The subscription tier ("free" or "pro")
+        str: The subscription tier ("free" or "community")
 
     Usage:
         @router.get("/feature")
         async def feature(
             tier: str = Depends(get_user_subscription_tier)
         ):
-            if tier == "pro":
+            if tier == "community":
                 return {"full_results": [...]}
             else:
                 return {"limited_results": [...]}

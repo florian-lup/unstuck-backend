@@ -30,7 +30,7 @@ async def create_checkout_session(
     _: RateLimited = None,
 ) -> CheckoutSessionResponse:
     """
-    Create a Stripe checkout session for Pro subscription.
+    Create a Stripe checkout session for Community subscription.
 
     This endpoint creates a Stripe checkout session and returns the URL
     where the user should be redirected to complete payment.
@@ -44,10 +44,10 @@ async def create_checkout_session(
     )
 
     # Check if user already has an active subscription
-    if user.subscription_tier == "pro" and user.subscription_status == "active":
+    if user.subscription_tier == "community" and user.subscription_status == "active":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already has an active Pro subscription",
+            detail="User already has an active Community subscription",
         )
 
     # Create checkout session
@@ -105,7 +105,7 @@ async def get_subscription_status(
     """
     Get the current user's subscription status.
 
-    Returns the subscription tier (free/pro) and Stripe subscription status.
+    Returns the subscription tier (free/community) and Stripe subscription status.
     """
     # Get user from database
     db_service = DatabaseService(db_session)

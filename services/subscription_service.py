@@ -22,7 +22,7 @@ class SubscriptionService:
         self, user: User, user_email: str
     ) -> dict[str, str]:
         """
-        Create a Stripe checkout session for Pro subscription.
+        Create a Stripe checkout session for Community subscription.
 
         Args:
             user: The database user object
@@ -51,7 +51,7 @@ class SubscriptionService:
             payment_method_types=["card"],
             line_items=[
                 {
-                    "price": settings.stripe_price_id_pro,
+                    "price": settings.stripe_price_id_community,
                     "quantity": 1,
                 }
             ],
@@ -125,7 +125,7 @@ class SubscriptionService:
 
         if user:
             user.stripe_subscription_id = subscription_id
-            user.subscription_tier = "pro"
+            user.subscription_tier = "community"
             user.subscription_status = "active"
             await self.db_session.commit()
 
@@ -156,7 +156,7 @@ class SubscriptionService:
 
         # Update tier based on status
         if status in ["active", "trialing"]:
-            user.subscription_tier = "pro"
+            user.subscription_tier = "community"
         elif status in ["canceled", "incomplete_expired", "past_due", "unpaid"]:
             user.subscription_tier = "free"
 

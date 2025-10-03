@@ -1,7 +1,6 @@
 """Authentication and user management routes."""
 
 import time
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession

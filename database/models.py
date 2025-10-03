@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -26,16 +25,16 @@ class User(Base):
     auth0_user_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
 
     # User metadata (optional)
-    username: Mapped[Optional[str]] = mapped_column(String(100))  # Display name from Auth0 or custom
-    email: Mapped[Optional[str]] = mapped_column(String(320))  # Email from Auth0 (for support purposes)
+    username: Mapped[str | None] = mapped_column(String(100))  # Display name from Auth0 or custom
+    email: Mapped[str | None] = mapped_column(String(320))  # Email from Auth0 (for support purposes)
 
     # Subscription fields
     subscription_tier: Mapped[str] = mapped_column(
         String(20), nullable=False, default="free"
-    )  # 'free' or 'pro'
-    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)  # Stripe customer ID
-    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(String(255))  # Current active subscription ID
-    subscription_status: Mapped[Optional[str]] = mapped_column(
+    )  # 'free' or 'community'
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)  # Stripe customer ID
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(255))  # Current active subscription ID
+    subscription_status: Mapped[str | None] = mapped_column(
         String(50)
     )  # active, canceled, past_due, etc. (mirrors Stripe status)
 
@@ -49,10 +48,10 @@ class User(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # User preferences (stored as JSON for flexibility)
-    preferences: Mapped[Optional[dict]] = mapped_column(JSONB, default=dict)
+    preferences: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
     conversations = relationship(
