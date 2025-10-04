@@ -135,7 +135,7 @@ class DatabaseService:
 
             current_time = datetime.now(UTC)
 
-            # For community tier, check if monthly counter needs reset
+            # For community tier, only track monthly requests
             if user.subscription_tier == "community":
                 # Initialize or check if we need to reset monthly counter
                 if user.request_count_reset_date is None:
@@ -144,7 +144,6 @@ class DatabaseService:
                         update(User)
                         .where(User.id == user_id)
                         .values(
-                            total_requests=User.total_requests + 1,
                             monthly_requests=1,
                             request_count_reset_date=current_time,
                             updated_at=current_time,
@@ -160,7 +159,6 @@ class DatabaseService:
                             update(User)
                             .where(User.id == user_id)
                             .values(
-                                total_requests=User.total_requests + 1,
                                 monthly_requests=1,
                                 request_count_reset_date=current_time,
                                 updated_at=current_time,
@@ -168,12 +166,11 @@ class DatabaseService:
                         )
                         await self.db.execute(stmt)
                     else:
-                        # Increment both counters atomically
+                        # Increment monthly counter atomically
                         stmt = (
                             update(User)
                             .where(User.id == user_id)
                             .values(
-                                total_requests=User.total_requests + 1,
                                 monthly_requests=User.monthly_requests + 1,
                                 updated_at=current_time,
                             )
