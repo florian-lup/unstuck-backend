@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, desc, select
+from sqlalchemy import and_, desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -107,18 +107,25 @@ class DatabaseService:
 
     async def increment_user_requests(self, user_id: UUID) -> User:
         """
-        Increment user request counters.
+        Increment user request counters using atomic SQL operations.
 
         For free tier: increments total_requests (lifetime)
         For community tier: increments monthly_requests (resets monthly)
+
+        This method uses atomic SQL UPDATE statements to prevent race conditions
+        when multiple concurrent requests increment the same user's counter.
 
         Args:
             user_id: User ID
 
         Returns:
             User: Updated user record
+
+        Raises:
+            ValueError: If user not found
         """
         try:
+            # First, fetch the user to check tier and reset logic
             query = select(User).where(User.id == user_id)
             result = await self.db.execute(query)
             user = result.scalar_one_or_none()
@@ -126,29 +133,67 @@ class DatabaseService:
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
-            # Increment total requests for all tiers
-            user.total_requests += 1
+            current_time = datetime.now(UTC)
 
-            # For community tier, also track monthly requests
+            # For community tier, check if monthly counter needs reset
             if user.subscription_tier == "community":
-                current_time = datetime.now(UTC)
-
                 # Initialize or check if we need to reset monthly counter
                 if user.request_count_reset_date is None:
-                    # First time tracking monthly requests
-                    user.monthly_requests = 1
-                    user.request_count_reset_date = current_time
+                    # First time tracking monthly requests - reset counter
+                    stmt = (
+                        update(User)
+                        .where(User.id == user_id)
+                        .values(
+                            total_requests=User.total_requests + 1,
+                            monthly_requests=1,
+                            request_count_reset_date=current_time,
+                            updated_at=current_time,
+                        )
+                    )
+                    await self.db.execute(stmt)
                 else:
                     # Check if a month has passed since last reset
                     days_since_reset = (current_time - user.request_count_reset_date).days
-                    if days_since_reset >= 30:  # Reset every 30 days
-                        user.monthly_requests = 1
-                        user.request_count_reset_date = current_time
+                    if days_since_reset >= 30:
+                        # Reset monthly counter
+                        stmt = (
+                            update(User)
+                            .where(User.id == user_id)
+                            .values(
+                                total_requests=User.total_requests + 1,
+                                monthly_requests=1,
+                                request_count_reset_date=current_time,
+                                updated_at=current_time,
+                            )
+                        )
+                        await self.db.execute(stmt)
                     else:
-                        user.monthly_requests += 1
+                        # Increment both counters atomically
+                        stmt = (
+                            update(User)
+                            .where(User.id == user_id)
+                            .values(
+                                total_requests=User.total_requests + 1,
+                                monthly_requests=User.monthly_requests + 1,
+                                updated_at=current_time,
+                            )
+                        )
+                        await self.db.execute(stmt)
+            else:
+                # For free tier and other tiers, only increment total_requests
+                stmt = (
+                    update(User)
+                    .where(User.id == user_id)
+                    .values(
+                        total_requests=User.total_requests + 1,
+                        updated_at=current_time,
+                    )
+                )
+                await self.db.execute(stmt)
 
-            user.updated_at = datetime.now(UTC)
             await self.db.commit()
+
+            # Refresh user object to get updated values
             await self.db.refresh(user)
             return user
 
