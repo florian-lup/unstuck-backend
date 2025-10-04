@@ -152,7 +152,9 @@ class DatabaseService:
                     await self.db.execute(stmt)
                 else:
                     # Check if a month has passed since last reset
-                    days_since_reset = (current_time - user.request_count_reset_date).days
+                    days_since_reset = (
+                        current_time - user.request_count_reset_date
+                    ).days
                     if days_since_reset >= 30:
                         # Reset monthly counter
                         stmt = (
@@ -248,7 +250,9 @@ class DatabaseService:
             # Handle tier-specific resets
             if new_tier == "free":
                 # Downgrading to free: Reset total_requests to 0
-                logger.info(f"User {user_id} downgraded to free tier, resetting counters")
+                logger.info(
+                    f"User {user_id} downgraded to free tier, resetting counters"
+                )
                 user.total_requests = 0
                 user.monthly_requests = 0
                 user.request_count_reset_date = None

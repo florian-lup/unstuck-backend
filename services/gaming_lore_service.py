@@ -29,7 +29,11 @@ class GamingLoreService:
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingLoreRequest, user_id: UUID, auth0_user_id: str, request_limit_info: "RequestLimitInfo"
+        self,
+        request: GamingLoreRequest,
+        user_id: UUID,
+        auth0_user_id: str,
+        request_limit_info: "RequestLimitInfo",
     ) -> GamingLoreResponse:
         """
         Perform a Gaming Lore search with conversation context.

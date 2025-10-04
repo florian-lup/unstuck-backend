@@ -30,7 +30,11 @@ class GamingBuildsService:
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingBuildsRequest, user_id: UUID, auth0_user_id: str, request_limit_info: "RequestLimitInfo"
+        self,
+        request: GamingBuildsRequest,
+        user_id: UUID,
+        auth0_user_id: str,
+        request_limit_info: "RequestLimitInfo",
     ) -> GamingBuildsResponse:
         """
         Perform a Gaming Builds search with conversation context.

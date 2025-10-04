@@ -29,7 +29,11 @@ class GamingChatService:
         self.db_service = DatabaseService(db_session)
 
     async def search(
-        self, request: GamingChatRequest, user_id: UUID, auth0_user_id: str, request_limit_info: "RequestLimitInfo"
+        self,
+        request: GamingChatRequest,
+        user_id: UUID,
+        auth0_user_id: str,
+        request_limit_info: "RequestLimitInfo",
     ) -> GamingChatResponse:
         """
         Perform a Gaming Chat with conversation context.
@@ -105,7 +109,7 @@ class GamingChatService:
             user = await self.db_service.get_user_by_id(user_id)
             if not user:
                 raise RuntimeError("User not found")
-            
+
             # Set model and search context based on subscription tier
             if user.subscription_tier == "community":
                 model = "sonar-pro"
@@ -113,7 +117,7 @@ class GamingChatService:
             else:  # free tier
                 model = "sonar"
                 search_context_size = "low"
-            
+
             # Call Perplexity API with tier-based parameters
             response = perplexity_client.gaming_chat(
                 query=request.query,

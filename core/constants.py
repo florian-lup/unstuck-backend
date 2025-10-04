@@ -33,10 +33,18 @@ class SubscriptionTier(str, Enum):
 SUBSCRIPTION_LIMITS: dict[SubscriptionTier, dict[str, Any]] = {
     SubscriptionTier.FREE: {
         "max_total_requests": 150,  # Lifetime limit for GAMING CHAT, never resets
-        "restricted_features": ["builds", "guides", "lore"],  # No access to these features
+        "restricted_features": [
+            "builds",
+            "guides",
+            "lore",
+        ],  # No access to these features
     },
     SubscriptionTier.COMMUNITY: {
         "max_monthly_requests": 300,  # Monthly limit for GAMING CHAT
-        "restricted_features": ["builds", "guides", "lore"],  # No access to these features
+        "restricted_features": [
+            "builds",
+            "guides",
+            "lore",
+        ],  # No access to these features
     },
 }

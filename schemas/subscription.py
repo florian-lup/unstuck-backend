@@ -26,7 +26,9 @@ class CancelSubscriptionResponse(BaseModel):
 class SubscriptionStatusResponse(BaseModel):
     """User subscription status."""
 
-    subscription_tier: str = Field(..., description="Current subscription tier (free/community)")
+    subscription_tier: str = Field(
+        ..., description="Current subscription tier (free/community)"
+    )
     subscription_status: str | None = Field(
         None, description="Stripe subscription status"
     )
@@ -38,4 +40,3 @@ class WebhookEvent(BaseModel):
 
     type: str = Field(..., description="Event type")
     data: dict = Field(..., description="Event data")
-

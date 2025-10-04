@@ -89,10 +89,8 @@ async def cancel_subscription(
 
     success = result["success"]
     message = result["message"]
-    
-    return CancelSubscriptionResponse(
-        success=bool(success), message=str(message)
-    )
+
+    return CancelSubscriptionResponse(success=bool(success), message=str(message))
 
 
 @router.get("/status", response_model=SubscriptionStatusResponse)
@@ -136,8 +134,9 @@ async def stripe_webhook(
     Security: Verifies webhook signature to ensure requests come from Stripe.
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
@@ -155,7 +154,9 @@ async def stripe_webhook(
         event = stripe.Webhook.construct_event(
             payload, sig_header, settings.stripe_webhook_secret
         )
-        logger.info(f"Webhook signature verified. Event type: {event['type']}, Event ID: {event.get('id')}")
+        logger.info(
+            f"Webhook signature verified. Event type: {event['type']}, Event ID: {event.get('id')}"
+        )
     except ValueError as e:
         # Invalid payload
         logger.error(f"Invalid webhook payload: {e}")
@@ -175,29 +176,37 @@ async def stripe_webhook(
     try:
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
-            logger.info(f"Processing checkout.session.completed. Session ID: {session.get('id')}, Customer: {session.get('customer')}, Subscription: {session.get('subscription')}")
+            logger.info(
+                f"Processing checkout.session.completed. Session ID: {session.get('id')}, Customer: {session.get('customer')}, Subscription: {session.get('subscription')}"
+            )
             await subscription_service.handle_checkout_completed(session)
             logger.info("Successfully processed checkout.session.completed")
 
         elif event["type"] == "customer.subscription.updated":
             subscription = event["data"]["object"]
-            logger.info(f"Processing customer.subscription.updated. Subscription ID: {subscription.get('id')}, Status: {subscription.get('status')}")
+            logger.info(
+                f"Processing customer.subscription.updated. Subscription ID: {subscription.get('id')}, Status: {subscription.get('status')}"
+            )
             await subscription_service.handle_subscription_updated(subscription)
             logger.info("Successfully processed customer.subscription.updated")
 
         elif event["type"] == "customer.subscription.deleted":
             subscription = event["data"]["object"]
-            logger.info(f"Processing customer.subscription.deleted. Subscription ID: {subscription.get('id')}")
+            logger.info(
+                f"Processing customer.subscription.deleted. Subscription ID: {subscription.get('id')}"
+            )
             await subscription_service.handle_subscription_deleted(subscription)
             logger.info("Successfully processed customer.subscription.deleted")
         else:
             logger.info(f"Unhandled webhook event type: {event['type']}")
 
     except Exception as e:
-        logger.error(f"Error processing webhook event {event['type']}: {e}", exc_info=True)
+        logger.error(
+            f"Error processing webhook event {event['type']}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing webhook: {str(e)}"
+            detail=f"Error processing webhook: {str(e)}",
         ) from e
 
     return {"status": "success"}
@@ -212,6 +221,5 @@ async def webhook_test_endpoint() -> dict[str, str]:
     return {
         "status": "ok",
         "message": "Webhook endpoint is accessible",
-        "webhook_url": "/subscription/webhook"
+        "webhook_url": "/subscription/webhook",
     }
-

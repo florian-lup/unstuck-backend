@@ -64,7 +64,9 @@ class Settings(BaseSettings):
         ..., description="Stripe webhook signing secret", alias="STRIPE_WEBHOOK_SECRET"
     )
     stripe_price_id_community: str = Field(
-        ..., description="Stripe price ID for Community tier", alias="STRIPE_PRICE_ID_COMMUNITY"
+        ...,
+        description="Stripe price ID for Community tier",
+        alias="STRIPE_PRICE_ID_COMMUNITY",
     )
     stripe_success_url: str = Field(
         default="http://localhost:3000/subscription/success",

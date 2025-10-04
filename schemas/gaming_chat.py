@@ -63,7 +63,8 @@ class RequestLimitInfo(BaseModel):
     max_requests: int = Field(..., description="Maximum requests allowed")
     limit_type: str = Field(..., description="Type of limit: 'lifetime' or 'monthly'")
     reset_date: str | None = Field(
-        default=None, description="ISO date when monthly limit resets (monthly tier only)"
+        default=None,
+        description="ISO date when monthly limit resets (monthly tier only)",
     )
 
 
