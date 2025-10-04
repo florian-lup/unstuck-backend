@@ -135,10 +135,16 @@ async def stripe_webhook(
 
     Security: Verifies webhook signature to ensure requests come from Stripe.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
+    logger.info("Received Stripe webhook request")
+
     if not sig_header:
+        logger.error("Stripe webhook missing signature header")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing stripe-signature header",
@@ -149,13 +155,16 @@ async def stripe_webhook(
         event = stripe.Webhook.construct_event(
             payload, sig_header, settings.stripe_webhook_secret
         )
-    except ValueError:
+        logger.info(f"Webhook signature verified. Event type: {event['type']}, Event ID: {event.get('id')}")
+    except ValueError as e:
         # Invalid payload
+        logger.error(f"Invalid webhook payload: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
         ) from None
-    except stripe.SignatureVerificationError:
+    except stripe.SignatureVerificationError as e:
         # Invalid signature
+        logger.error(f"Invalid webhook signature: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
         ) from None
@@ -163,17 +172,46 @@ async def stripe_webhook(
     # Handle the event
     subscription_service = SubscriptionService(db_session)
 
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        await subscription_service.handle_checkout_completed(session)
+    try:
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            logger.info(f"Processing checkout.session.completed. Session ID: {session.get('id')}, Customer: {session.get('customer')}, Subscription: {session.get('subscription')}")
+            await subscription_service.handle_checkout_completed(session)
+            logger.info("Successfully processed checkout.session.completed")
 
-    elif event["type"] == "customer.subscription.updated":
-        subscription = event["data"]["object"]
-        await subscription_service.handle_subscription_updated(subscription)
+        elif event["type"] == "customer.subscription.updated":
+            subscription = event["data"]["object"]
+            logger.info(f"Processing customer.subscription.updated. Subscription ID: {subscription.get('id')}, Status: {subscription.get('status')}")
+            await subscription_service.handle_subscription_updated(subscription)
+            logger.info("Successfully processed customer.subscription.updated")
 
-    elif event["type"] == "customer.subscription.deleted":
-        subscription = event["data"]["object"]
-        await subscription_service.handle_subscription_deleted(subscription)
+        elif event["type"] == "customer.subscription.deleted":
+            subscription = event["data"]["object"]
+            logger.info(f"Processing customer.subscription.deleted. Subscription ID: {subscription.get('id')}")
+            await subscription_service.handle_subscription_deleted(subscription)
+            logger.info("Successfully processed customer.subscription.deleted")
+        else:
+            logger.info(f"Unhandled webhook event type: {event['type']}")
+
+    except Exception as e:
+        logger.error(f"Error processing webhook event {event['type']}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing webhook: {str(e)}"
+        ) from e
 
     return {"status": "success"}
+
+
+@router.get("/webhook-test")
+async def webhook_test_endpoint() -> dict[str, str]:
+    """
+    Test endpoint to verify webhook URL is accessible.
+    Returns 200 OK if the endpoint is reachable.
+    """
+    return {
+        "status": "ok",
+        "message": "Webhook endpoint is accessible",
+        "webhook_url": "/subscription/webhook"
+    }
 

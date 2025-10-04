@@ -31,15 +31,29 @@ class SubscriptionService:
         Returns:
             Dictionary with checkout_url and session_id
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Create or retrieve Stripe customer
+        customer_id = None
         if user.stripe_customer_id:
-            customer_id = user.stripe_customer_id
-        else:
+            try:
+                # Try to retrieve the customer to verify it exists
+                stripe.Customer.retrieve(user.stripe_customer_id)
+                customer_id = user.stripe_customer_id
+                logger.info(f"Using existing Stripe customer: {customer_id}")
+            except stripe.StripeError as e:
+                # Customer doesn't exist (likely switched from live to test mode)
+                logger.warning(f"Stripe customer {user.stripe_customer_id} not found: {e}. Creating new customer.")
+                customer_id = None
+        
+        if not customer_id:
             customer = stripe.Customer.create(
                 email=user_email,
                 metadata={"user_id": str(user.id), "auth0_user_id": str(user.auth0_user_id)},
             )
             customer_id = customer.id
+            logger.info(f"Created new Stripe customer: {customer_id}")
 
             # Save customer ID to database
             user.stripe_customer_id = customer_id
@@ -107,29 +121,45 @@ class SubscriptionService:
         Args:
             session: Stripe checkout session data
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Extract user info from metadata
         user_id = session.get("metadata", {}).get("user_id")
+        logger.info(f"Checkout completed - User ID from metadata: {user_id}")
+        
         if not user_id:
+            logger.error("No user_id found in checkout session metadata")
             return
 
         # Get the subscription
         subscription_id = session.get("subscription")
+        logger.info(f"Checkout completed - Subscription ID: {subscription_id}")
+        
         if not subscription_id:
+            logger.error("No subscription_id found in checkout session")
             return
 
-        # Update user in database
-        result = await self.db_session.execute(
-            select(User).where(User.id == user_id)
-        )
-        user = result.scalar_one_or_none()
+        try:
+            # Update user in database
+            result = await self.db_session.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = result.scalar_one_or_none()
 
-        if user:
+            if not user:
+                logger.error(f"User not found in database with ID: {user_id}")
+                return
+
+            logger.info(f"Found user: {user.auth0_user_id}, Current tier: {user.subscription_tier}, Current status: {user.subscription_status}")
+            
             old_tier = user.subscription_tier
             user.stripe_subscription_id = subscription_id
             user.subscription_status = "active"
             
             # Handle tier change with proper counter resets
             if old_tier != "community":
+                logger.info(f"Upgrading user from {old_tier} to community tier")
                 from database.service import DatabaseService
                 db_service = DatabaseService(self.db_session)
                 await db_service.handle_subscription_tier_change(
@@ -137,8 +167,15 @@ class SubscriptionService:
                     new_tier="community",
                     old_tier=old_tier
                 )
+                logger.info(f"Successfully upgraded user {user.id} to community tier")
             else:
+                logger.info(f"User already on community tier, updating subscription status only")
                 await self.db_session.commit()
+                
+        except Exception as e:
+            logger.error(f"Error in handle_checkout_completed: {e}", exc_info=True)
+            await self.db_session.rollback()
+            raise
 
     async def handle_subscription_updated(self, subscription: dict) -> None:
         """
