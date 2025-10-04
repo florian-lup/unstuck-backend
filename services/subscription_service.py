@@ -169,7 +169,7 @@ class SubscriptionService:
                 )
                 logger.info(f"Successfully upgraded user {user.id} to community tier")
             else:
-                logger.info(f"User already on community tier, updating subscription status only")
+                logger.info("User already on community tier, updating subscription status only")
                 await self.db_session.commit()
                 
         except Exception as e:

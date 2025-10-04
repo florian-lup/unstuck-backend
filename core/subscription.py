@@ -1,6 +1,6 @@
 """Subscription tier checking utilities."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import cast
 
 from fastapi import Depends, HTTPException, status
@@ -158,7 +158,7 @@ def _check_request_limit(user: User) -> None:
         max_monthly = cast(int, SUBSCRIPTION_LIMITS[SubscriptionTier.COMMUNITY]["max_monthly_requests"])
 
         # Check if we need to reset monthly counter
-        current_time = datetime.utcnow()
+        current_time = datetime.now(UTC)
         if user.request_count_reset_date is None:
             # First request, will be reset in increment_user_requests
             pass
@@ -330,7 +330,7 @@ def get_request_limit_info(user: User) -> dict[str, int | str | None]:
         max_monthly = cast(int, SUBSCRIPTION_LIMITS[SubscriptionTier.COMMUNITY]["max_monthly_requests"])
         
         # Check if monthly counter needs reset
-        current_time = datetime.utcnow()
+        current_time = datetime.now(UTC)
         if user.request_count_reset_date is None:
             # First request, will be initialized
             remaining = max_monthly

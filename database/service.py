@@ -1,7 +1,7 @@
 """Database service layer with security best practices."""
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -49,7 +49,7 @@ class DatabaseService:
 
             if user:
                 # Update last active time and any new info
-                user.last_active_at = datetime.utcnow()
+                user.last_active_at = datetime.now(UTC)
                 if username and user.username != username:
                     user.username = username
                 if email and user.email != email:
@@ -61,7 +61,7 @@ class DatabaseService:
                 auth0_user_id=auth0_user_id,
                 username=username,
                 email=email,
-                last_active_at=datetime.utcnow(),
+                last_active_at=datetime.now(UTC),
             )
             self.db.add(user)
             await self.db.commit()
@@ -96,7 +96,7 @@ class DatabaseService:
                 raise ValueError(f"User {user_id} not found")
 
             user.preferences = preferences
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(UTC)
             await self.db.commit()
             return user
 
@@ -131,7 +131,7 @@ class DatabaseService:
 
             # For community tier, also track monthly requests
             if user.subscription_tier == "community":
-                current_time = datetime.utcnow()
+                current_time = datetime.now(UTC)
 
                 # Initialize or check if we need to reset monthly counter
                 if user.request_count_reset_date is None:
@@ -147,7 +147,7 @@ class DatabaseService:
                     else:
                         user.monthly_requests += 1
 
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(UTC)
             await self.db.commit()
             await self.db.refresh(user)
             return user
@@ -215,15 +215,15 @@ class DatabaseService:
                 # Upgrading from free to community: Keep total_requests, reset monthly
                 logger.info(f"User {user_id} upgraded to community tier")
                 user.monthly_requests = 0
-                user.request_count_reset_date = datetime.utcnow()
+                user.request_count_reset_date = datetime.now(UTC)
 
             elif new_tier == "community" and old_tier != "free":
                 # Switching to community from another tier: Reset monthly counter
                 logger.info(f"User {user_id} switched to community tier")
                 user.monthly_requests = 0
-                user.request_count_reset_date = datetime.utcnow()
+                user.request_count_reset_date = datetime.now(UTC)
 
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(UTC)
             await self.db.commit()
             await self.db.refresh(user)
             return user
@@ -463,7 +463,7 @@ class DatabaseService:
 
             if conversation:
                 conversation.title = title  # type: ignore[assignment]
-                conversation.updated_at = datetime.utcnow()  # type: ignore[assignment]
+                conversation.updated_at = datetime.now(UTC)  # type: ignore[assignment]
                 await self.db.commit()
 
             return conversation
@@ -532,7 +532,7 @@ class DatabaseService:
             self.db.add(message)
 
             # Update conversation timestamp
-            conversation.updated_at = datetime.utcnow()  # type: ignore[assignment]
+            conversation.updated_at = datetime.now(UTC)  # type: ignore[assignment]
 
             await self.db.commit()
             await self.db.refresh(message)
@@ -624,7 +624,7 @@ class DatabaseService:
 
             if conversation:
                 conversation.is_archived = "archived"  # type: ignore[assignment]
-                conversation.updated_at = datetime.utcnow()  # type: ignore[assignment]
+                conversation.updated_at = datetime.now(UTC)  # type: ignore[assignment]
                 await self.db.commit()
                 return True
 
@@ -700,7 +700,7 @@ class DatabaseService:
 
             if conversation:
                 conversation.is_archived = status  # type: ignore[assignment]
-                conversation.updated_at = datetime.utcnow()  # type: ignore[assignment]
+                conversation.updated_at = datetime.now(UTC)  # type: ignore[assignment]
                 await self.db.commit()
                 logger.info(
                     f"Conversation {conversation_id} status updated to {status}"
