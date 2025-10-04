@@ -184,6 +184,9 @@ class SubscriptionService:
         Args:
             subscription: Stripe subscription data
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         customer_id = subscription.get("customer")
         if not customer_id:
             return
@@ -200,14 +203,31 @@ class SubscriptionService:
         # Store old tier for comparison
         old_tier = user.subscription_tier
 
-        # Update subscription status
+        # Check if subscription is set to cancel at period end
+        cancel_at_period_end = subscription.get("cancel_at_period_end", False)
         status = subscription.get("status")
-        user.subscription_status = status
+        
+        logger.info(f"Subscription update for user {user.id}: status={status}, cancel_at_period_end={cancel_at_period_end}")
+
+        # Update subscription status
+        # If cancel_at_period_end is True, keep status as "canceling" even if Stripe says "active"
+        if cancel_at_period_end and status == "active":
+            user.subscription_status = "canceling"
+            logger.info(f"Keeping subscription status as 'canceling' for user {user.id} (cancel_at_period_end=True)")
+        else:
+            user.subscription_status = status
+        
         user.stripe_subscription_id = subscription.get("id")
 
         # Determine new tier based on status
         new_tier = old_tier
-        if status in ["active", "trialing"]:
+        
+        # Don't upgrade if subscription is set to cancel
+        if cancel_at_period_end:
+            # Keep current tier until subscription is actually deleted
+            new_tier = old_tier
+            logger.info(f"Maintaining tier {old_tier} for user {user.id} (subscription set to cancel)")
+        elif status in ["active", "trialing"]:
             new_tier = "community"
         elif status in ["canceled", "incomplete_expired", "past_due", "unpaid"]:
             new_tier = "free"
