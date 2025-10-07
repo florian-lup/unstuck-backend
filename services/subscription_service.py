@@ -44,13 +44,37 @@ class SubscriptionService:
                 customer_id = user.stripe_customer_id
                 logger.info(f"Using existing Stripe customer: {customer_id}")
             except stripe.StripeError as e:
-                # Customer doesn't exist (likely switched from live to test mode)
+                # Customer doesn't exist (likely deleted or switched between test/live mode)
                 logger.warning(
-                    f"Stripe customer {user.stripe_customer_id} not found: {e}. Creating new customer."
+                    f"Stripe customer {user.stripe_customer_id} not found: {e}. "
+                    f"Clearing stale customer ID and searching for existing customers."
                 )
+                # Clear the stale customer ID from database
+                user.stripe_customer_id = None
+                await self.db_session.commit()
                 customer_id = None
 
         if not customer_id:
+            # Before creating a new customer, search for existing ones by email
+            # to avoid duplicates
+            try:
+                existing_customers = stripe.Customer.list(email=user_email, limit=1)
+                if existing_customers.data:
+                    # Found existing customer with this email
+                    existing_customer = existing_customers.data[0]
+                    customer_id = existing_customer.id
+                    logger.info(
+                        f"Found existing Stripe customer by email: {customer_id}. "
+                        f"Reusing instead of creating duplicate."
+                    )
+                    # Save the found customer ID to database
+                    user.stripe_customer_id = customer_id
+                    await self.db_session.commit()
+            except stripe.StripeError as e:
+                logger.warning(f"Error searching for existing customers: {e}")
+
+        if not customer_id:
+            # No existing customer found, create a new one
             customer = stripe.Customer.create(
                 email=user_email,
                 metadata={
