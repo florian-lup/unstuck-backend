@@ -53,20 +53,23 @@ class OpenAIRealtimeClient:
             "Content-Type": "application/json",
         }
 
+        # The GA client_secrets endpoint only accepts model parameter
+        # Voice, instructions, and other session configs are set via WebSocket after connection
         payload: dict[str, Any] = {
             "model": self.model,
-            "voice": voice,
         }
-
-        # Add optional parameters
-        if instructions:
-            payload["instructions"] = instructions
-
-        if max_response_output_tokens:
-            payload["max_response_output_tokens"] = max_response_output_tokens
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=payload, headers=headers)
             response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            data = response.json()
+            
+            # Store config for later use (will be sent via WebSocket after connection)
+            data["_config"] = {
+                "voice": voice,
+                "instructions": instructions,
+                "max_response_output_tokens": max_response_output_tokens,
+            }
+            
+            return data  # type: ignore[no-any-return]
 

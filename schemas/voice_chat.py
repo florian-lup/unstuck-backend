@@ -54,6 +54,27 @@ class VoiceChatSessionRequest(BaseModel):
         )
 
 
+class VoiceChatSessionConfig(BaseModel):
+    """Session configuration to send after WebSocket connection."""
+
+    voice: str = Field(
+        default="alloy",
+        description="Voice to use for audio responses",
+    )
+    instructions: str = Field(
+        ...,
+        description="System instructions for the AI assistant",
+    )
+    modalities: list[str] = Field(
+        default=["text", "audio"],
+        description="Modalities to use (text, audio)",
+    )
+    turn_detection: dict[str, str | float] = Field(
+        default={"type": "server_vad"},
+        description="Turn detection configuration",
+    )
+
+
 class VoiceChatSessionResponse(BaseModel):
     """Response model containing ephemeral token for voice chat."""
 
@@ -76,6 +97,10 @@ class VoiceChatSessionResponse(BaseModel):
     websocket_url: str = Field(
         default="wss://api.openai.com/v1/realtime",
         description="WebSocket URL to connect to (query params: ?model=MODEL_NAME)",
+    )
+    session_config: VoiceChatSessionConfig = Field(
+        ...,
+        description="Session configuration to send via WebSocket after connection (as session.update event)",
     )
     connection_instructions: dict[str, str] = Field(
         default={

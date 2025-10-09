@@ -13,7 +13,11 @@ from core.subscription import check_request_limits_only
 from database.connection import get_db_session
 from database.models import User
 from schemas.auth import AuthenticatedUser
-from schemas.voice_chat import VoiceChatSessionRequest, VoiceChatSessionResponse
+from schemas.voice_chat import (
+    VoiceChatSessionConfig,
+    VoiceChatSessionRequest,
+    VoiceChatSessionResponse,
+)
 
 router = APIRouter()
 
@@ -81,12 +85,20 @@ async def create_voice_session(
         client_secret_value = token_data["client_secret"]["value"]
         browser_url = f"wss://api.openai.com/v1/realtime?model={token_data['model']}&client_secret={client_secret_value}"
         
+        # Get session config from token_data
+        config = token_data.get("_config", {})
+        session_config = VoiceChatSessionConfig(
+            voice=config.get("voice", settings.openai_realtime_voice),
+            instructions=config.get("instructions", "You are a helpful assistant."),
+        )
+        
         return VoiceChatSessionResponse(
             client_secret=client_secret_value,
             ephemeral_key_id=token_data["id"],
             model=token_data["model"],
             expires_at=token_data["client_secret"]["expires_at"],
             websocket_url=browser_url,  # Browser-friendly URL with client_secret as query param
+            session_config=session_config,
             connection_instructions={
                 "url_browser": browser_url,
                 "url_nodejs": f"wss://api.openai.com/v1/realtime?model={token_data['model']}",
@@ -96,9 +108,10 @@ async def create_voice_session(
                 "expires_in_seconds": str(
                     token_data["client_secret"]["expires_at"] - int(request.state.request_id) // 1000000
                 ),
-                "note": "Connect immediately - token is valid for 60 seconds only. For browsers/Electron renderer, use websocket_url field (includes client_secret). For Node.js, use url_nodejs and set Authorization header.",
+                "note": "Connect immediately - token is valid for 60 seconds only. For browsers/Electron renderer, use websocket_url field (includes client_secret). For Node.js, use url_nodejs and set Authorization header. After connection, send session.update event with session_config.",
                 "example_browser": (
-                    f"const ws = new WebSocket('{browser_url}');"
+                    f"const ws = new WebSocket('{browser_url}'); "
+                    "ws.onopen = () => ws.send(JSON.stringify({ type: 'session.update', session: sessionConfig }));"
                 ),
                 "example_nodejs": (
                     "const ws = new WebSocket('wss://api.openai.com/v1/realtime?model="
