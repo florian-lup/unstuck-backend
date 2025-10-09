@@ -77,23 +77,26 @@ async def create_voice_session(
         # Note: Browsers cannot set custom WebSocket headers, so we provide both methods:
         # 1. Query parameter with client_secret (for browsers/Electron renderer) - RECOMMENDED
         # 2. Header instructions (for Node.js clients)
-        client_secret_value = token_data["client_secret"]["value"]
-        browser_url = f"wss://api.openai.com/v1/realtime?model={token_data['model']}&client_secret={client_secret_value}"
+        
+        # GA API response format: top-level 'value' and 'expires_at', session details nested
+        client_secret_value = token_data["value"]
+        session_data = token_data["session"]
+        browser_url = f"wss://api.openai.com/v1/realtime?model={session_data['model']}&client_secret={client_secret_value}"
         
         return VoiceChatSessionResponse(
             client_secret=client_secret_value,
-            ephemeral_key_id=token_data["id"],
-            model=token_data["model"],
-            expires_at=token_data["client_secret"]["expires_at"],
+            ephemeral_key_id=session_data["id"],
+            model=session_data["model"],
+            expires_at=token_data["expires_at"],
             websocket_url=browser_url,  # Browser-friendly URL with client_secret as query param
             connection_instructions={
                 "url_browser": browser_url,
-                "url_nodejs": f"wss://api.openai.com/v1/realtime?model={token_data['model']}",
+                "url_nodejs": f"wss://api.openai.com/v1/realtime?model={session_data['model']}",
                 "auth_method_browser": "client_secret included in URL as query parameter",
                 "auth_method_nodejs": f"Set header: Authorization: Bearer {client_secret_value}",
                 "protocol": "WebSocket",
                 "expires_in_seconds": str(
-                    token_data["client_secret"]["expires_at"] - int(request.state.request_id) // 1000000
+                    token_data["expires_at"] - int(request.state.request_id) // 1000000
                 ),
                 "note": "Connect immediately - token is valid for 60 seconds only. For browsers/Electron renderer, use websocket_url field (includes client_secret). For Node.js, use url_nodejs and set Authorization header.",
                 "example_browser": (
@@ -101,7 +104,7 @@ async def create_voice_session(
                 ),
                 "example_nodejs": (
                     "const ws = new WebSocket('wss://api.openai.com/v1/realtime?model="
-                    f"{token_data['model']}', [], {{ "
+                    f"{session_data['model']}', [], {{ "
                     f"headers: {{ 'Authorization': 'Bearer {client_secret_value}' }} }})"
                 ),
             },

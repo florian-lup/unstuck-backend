@@ -36,12 +36,13 @@ class OpenAIRealtimeClient:
 
         Returns:
             dict containing (GA API format):
-                - value: The ephemeral client secret token
-                - id: Unique identifier for the ephemeral key
-                - model: Model being used
-                - client_secret: Object with 'value' and 'expires_at' fields
-                  - value: The ephemeral token string
-                  - expires_at: Unix timestamp when token expires (typically 60 seconds)
+                - value: The ephemeral client secret token string
+                - expires_at: Unix timestamp when token expires (typically 60 seconds)
+                - session: Object containing session configuration
+                  - id: Unique identifier for the session
+                  - model: Model being used
+                  - instructions: The instructions configured for the session
+                  - audio: Audio configuration including voice, format, etc.
 
         Raises:
             httpx.HTTPError: If the API request fails
