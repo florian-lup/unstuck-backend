@@ -77,7 +77,7 @@ async def create_voice_session(
         # Build response with connection instructions
         return VoiceChatSessionResponse(
             client_secret=token_data["client_secret"]["value"],
-            ephemeral_key_id=token_data["client_secret"]["id"],
+            ephemeral_key_id=token_data["id"],
             model=token_data["model"],
             expires_at=token_data["client_secret"]["expires_at"],
             websocket_url=f"wss://api.openai.com/v1/realtime?model={token_data['model']}",
