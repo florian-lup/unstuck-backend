@@ -84,42 +84,6 @@ async def get_user_subscription_tier(
     return user.subscription_tier
 
 
-def _check_feature_access(user: User, feature: str) -> None:
-    """
-    Check if user has access to a specific feature.
-
-    Args:
-        user: User database record
-        feature: Feature name
-
-    Raises:
-        HTTPException: If user doesn't have access to the feature
-    """
-    tier = user.subscription_tier
-    tier_config = SUBSCRIPTION_LIMITS.get(
-        SubscriptionTier.FREE if tier == "free" else SubscriptionTier.COMMUNITY
-    )
-
-    if tier_config and feature in cast(
-        list[str], tier_config.get("restricted_features", [])
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "error": "feature_access_denied",
-                "message": (
-                    "**Agents will be available exclusively for Pro tier users.**\n\n"
-                    "In the meantime enjoy gaming chat on **Free tier** (150 lifetime requests), "
-                    "upgrade to **Community** for 300 monthly requests.\n\n"
-                    "• Pro tier coming soon with exclusive features"
-                ),
-                "feature": feature,
-                "current_tier": tier,
-                "upgrade_required": True,
-            },
-        )
-
-
 def _check_request_limit(user: User) -> None:
     """
     Check if user has exceeded their request limit.
@@ -204,92 +168,6 @@ def _check_request_limit(user: User) -> None:
                         else None,
                     },
                 )
-
-
-async def check_feature_access_and_limits(
-    feature: str,
-    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
-    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
-) -> User:
-    """
-    Dependency that checks feature access and request limits, then increments counter.
-
-    This dependency should be used on endpoints that need to:
-    1. Check if the user's subscription tier allows access to a feature
-    2. Check if the user has exceeded their request limit
-    3. Increment the user's request counter
-
-    Args:
-        feature: Feature name to check access for
-        current_user: Authenticated user from JWT token
-        db_session: Database session
-
-    Returns:
-        User: The user database record after incrementing request counter
-
-    Raises:
-        HTTPException: If user doesn't have access or exceeded limits
-
-    Usage:
-        @router.post("/feature")
-        async def feature_endpoint(
-            user: User = Depends(lambda: check_feature_access_and_limits("feature"))
-        ):
-            # User has access and counter is incremented
-            return {"response": "..."}
-    """
-    # Get user from database
-    db_service = DatabaseService(db_session)
-    user = await db_service.get_or_create_user(
-        auth0_user_id=current_user.user_id,
-        email=current_user.email,
-        username=current_user.name,
-    )
-
-    # Check feature access
-    _check_feature_access(user, feature)
-
-    # Check request limits
-    _check_request_limit(user)
-
-    # Increment request counter
-    return await db_service.increment_user_requests(user.id)
-
-
-async def check_feature_access_only(
-    feature: str,
-    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
-    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
-) -> User:
-    """
-    Check feature access only WITHOUT incrementing request counter.
-
-    Use this for features that have their own access restrictions but don't
-    count towards the request limits.
-
-    Args:
-        feature: Feature name to check access for
-        current_user: Authenticated user from JWT token
-        db_session: Database session
-
-    Returns:
-        User: The user database record
-
-    Raises:
-        HTTPException: If user doesn't have access to the feature
-    """
-    # Get user from database
-    db_service = DatabaseService(db_session)
-    user = await db_service.get_or_create_user(
-        auth0_user_id=current_user.user_id,
-        email=current_user.email,
-        username=current_user.name,
-    )
-
-    # Check feature access only (no counter increment)
-    _check_feature_access(user, feature)
-
-    return user
 
 
 def get_request_limit_info(user: User) -> dict[str, int | str | None]:
