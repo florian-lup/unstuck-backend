@@ -76,31 +76,34 @@ async def create_voice_session(
 
         # Build response with connection instructions
         # Note: Browsers cannot set custom WebSocket headers, so we provide both methods:
-        # 1. URL with token (for browsers/Electron renderer)
+        # 1. Query parameter with client_secret (for browsers/Electron renderer) - RECOMMENDED
         # 2. Header instructions (for Node.js clients)
+        client_secret_value = token_data["client_secret"]["value"]
+        browser_url = f"wss://api.openai.com/v1/realtime?model={token_data['model']}&client_secret={client_secret_value}"
+        
         return VoiceChatSessionResponse(
-            client_secret=token_data["client_secret"]["value"],
+            client_secret=client_secret_value,
             ephemeral_key_id=token_data["id"],
             model=token_data["model"],
             expires_at=token_data["client_secret"]["expires_at"],
-            websocket_url=f"wss://api.openai.com/v1/realtime?model={token_data['model']}",
+            websocket_url=browser_url,  # Browser-friendly URL with client_secret as query param
             connection_instructions={
-                "url": f"wss://api.openai.com/v1/realtime?model={token_data['model']}",
-                "auth_method_browser": f"Use subprotocol: ['realtime', 'openai-insecure-api-key.{token_data['client_secret']['value']}']",
-                "auth_method_nodejs": f"Set header: Authorization: Bearer {token_data['client_secret']['value']}",
+                "url_browser": browser_url,
+                "url_nodejs": f"wss://api.openai.com/v1/realtime?model={token_data['model']}",
+                "auth_method_browser": "client_secret included in URL as query parameter",
+                "auth_method_nodejs": f"Set header: Authorization: Bearer {client_secret_value}",
                 "protocol": "WebSocket",
                 "expires_in_seconds": str(
                     token_data["client_secret"]["expires_at"] - int(request.state.request_id) // 1000000
                 ),
-                "note": "Connect immediately - token is valid for 60 seconds only. Use browser method for Electron renderer, Node.js method for main process.",
+                "note": "Connect immediately - token is valid for 60 seconds only. For browsers/Electron renderer, use websocket_url field (includes client_secret). For Node.js, use url_nodejs and set Authorization header.",
                 "example_browser": (
-                    f"const ws = new WebSocket('wss://api.openai.com/v1/realtime?model={token_data['model']}', "
-                    f"['realtime', 'openai-insecure-api-key.{token_data['client_secret']['value']}']);"
+                    f"const ws = new WebSocket('{browser_url}');"
                 ),
                 "example_nodejs": (
                     "const ws = new WebSocket('wss://api.openai.com/v1/realtime?model="
                     f"{token_data['model']}', [], {{ "
-                    f"headers: {{ 'Authorization': 'Bearer {token_data['client_secret']['value']}', 'OpenAI-Beta': 'realtime=v1' }} }})"
+                    f"headers: {{ 'Authorization': 'Bearer {client_secret_value}' }} }})"
                 ),
             },
         )
@@ -154,8 +157,8 @@ async def get_voice_chat_info(
             "step_3": "Send audio frames via WebSocket",
             "step_4": "Receive real-time audio responses",
             "step_5": "Handle session expiration (60 seconds) and reconnect if needed",
-            "browser_note": "Browsers cannot set custom WebSocket headers. Use the subprotocol method: new WebSocket(url, ['realtime', 'openai-insecure-api-key.TOKEN'])",
-            "nodejs_note": "Node.js can set custom headers: new WebSocket(url, [], { headers: { 'Authorization': 'Bearer TOKEN' } })",
+            "browser_note": "For browsers/Electron renderer: Use the websocket_url field directly (client_secret included as query parameter). Example: new WebSocket(response.websocket_url)",
+            "nodejs_note": "For Node.js: Use url_nodejs from connection_instructions and set Authorization header. Example: new WebSocket(url, [], { headers: { 'Authorization': 'Bearer TOKEN' } })",
         },
         "recommended_for": [
             "Real-time gaming voice assistance",

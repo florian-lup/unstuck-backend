@@ -23,10 +23,12 @@ class OpenAIRealtimeClient:
         max_response_output_tokens: int | str = "inf",
     ) -> dict[str, Any]:
         """
-        Create an ephemeral token for client-side Realtime API access.
+        Create an ephemeral token for client-side Realtime API access (GA version).
 
         This token is short-lived (typically 1 minute) and can be safely used
         in client applications without exposing your primary API key.
+
+        Uses the GA (General Availability) endpoint: /v1/realtime/client_secrets
 
         Args:
             voice: Voice to use for audio responses.
@@ -44,7 +46,7 @@ class OpenAIRealtimeClient:
         Raises:
             httpx.HTTPError: If the API request fails
         """
-        url = f"{self.base_url}/realtime/sessions"
+        url = f"{self.base_url}/realtime/client_secrets"
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
