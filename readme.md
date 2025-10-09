@@ -169,7 +169,6 @@ The API supports various search parameters:
 
 - **model**: `sonar` (default)
 - **search_context_size**: `low` (default for efficiency)
-- **temperature**: 0.2 (default for focused responses)
 
 ### 📦 Core Dependencies
 

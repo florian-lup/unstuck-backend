@@ -20,7 +20,6 @@ class PerplexityClient:
         messages: list[dict[str, Any]],
         model: str,
         search_context_size: str,
-        temperature: float | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -30,7 +29,6 @@ class PerplexityClient:
             messages: List of conversation messages
             model: The model to use
             search_context_size: Context size for web search ("low", "medium", "high")
-            temperature: Response randomness (0-2, optional)
             **kwargs: Additional parameters for the API
 
         Returns:
@@ -45,10 +43,6 @@ class PerplexityClient:
             **kwargs,
         }
 
-        # Only include temperature if provided
-        if temperature is not None:
-            params["temperature"] = temperature
-
         return self._client.chat.completions.create(**params)
 
     def gaming_chat(
@@ -58,7 +52,6 @@ class PerplexityClient:
         conversation_history: list[dict[str, Any]] | None = None,
         version: str | None = None,
         model: str = "sonar",
-        temperature: float = 0.2,
         search_context_size: str = "low",
         **kwargs: Any,
     ) -> Any:
@@ -71,7 +64,6 @@ class PerplexityClient:
             conversation_history: Previous messages in the conversation
             version: The game version to provide context for (optional)
             model: The model to use (default: "sonar")
-            temperature: Response randomness (0-2, default: 0.2)
             search_context_size: Context size for web search ("low", "medium", "high", default: "low")
             **kwargs: Additional parameters
 
@@ -123,7 +115,6 @@ class PerplexityClient:
         return self.chat_completion(
             messages=messages,
             model=model,
-            temperature=temperature,
             search_context_size=search_context_size,
             **kwargs,
         )

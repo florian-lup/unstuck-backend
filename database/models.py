@@ -165,7 +165,7 @@ class Message(Base):
     # AI-specific fields (stored as JSON for flexibility)
     search_results = Column(JSONB)  # Search results from Perplexity
     usage_stats = Column(JSONB)  # Token usage and other metrics
-    model_info = Column(JSONB)  # Model used, temperature, etc.
+    model_info = Column(JSONB)  # Model used, finish reason, etc.
 
     # Message metadata
     response_time_ms = Column(String(10))  # How long the AI took to respond

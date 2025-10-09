@@ -26,7 +26,6 @@ class GamingChatRequest(BaseModel):
     conversation_history: list[ConversationMessage] | None = Field(
         default=None, description="Previous messages in the conversation"
     )
-    # temperature removed - now handled in config
 
 
 class SearchResult(BaseModel):
