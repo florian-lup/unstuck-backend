@@ -71,7 +71,6 @@ async def create_voice_session(
         token_data = await openai_client.create_ephemeral_token(
             voice=settings.openai_realtime_voice,
             instructions=request_data.get_instructions(),
-            max_response_output_tokens="inf",  # Always unlimited for voice chat
         )
 
         # Build response with connection instructions
