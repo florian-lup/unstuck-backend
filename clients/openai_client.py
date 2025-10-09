@@ -37,11 +37,13 @@ class OpenAIRealtimeClient:
             max_response_output_tokens: Maximum tokens in response ("inf" for unlimited)
 
         Returns:
-            dict containing:
-                - client_secret: Ephemeral token for WebSocket connection
-                - ephemeral_key_id: Unique identifier for the ephemeral key
+            dict containing (GA API format):
+                - value: The ephemeral client secret token
+                - id: Unique identifier for the ephemeral key
                 - model: Model being used
-                - expires_at: Unix timestamp when token expires (typically 60 seconds)
+                - client_secret: Object with 'value' and 'expires_at' fields
+                  - value: The ephemeral token string
+                  - expires_at: Unix timestamp when token expires (typically 60 seconds)
 
         Raises:
             httpx.HTTPError: If the API request fails
@@ -53,20 +55,46 @@ class OpenAIRealtimeClient:
             "Content-Type": "application/json",
         }
 
-        payload: dict[str, Any] = {
+        # Build the session configuration according to GA API format
+        session_config: dict[str, Any] = {
+            "type": "realtime",  # Required for GA API
             "model": self.model,
-            "voice": voice,
+            "audio": {
+                "output": {
+                    "voice": voice,
+                }
+            },
         }
 
         # Add optional parameters
         if instructions:
-            payload["instructions"] = instructions
+            session_config["instructions"] = instructions
 
         if max_response_output_tokens:
-            payload["max_response_output_tokens"] = max_response_output_tokens
+            session_config["max_response_output_tokens"] = max_response_output_tokens
+
+        # Wrap in session object as required by GA API
+        payload = {"session": session_config}
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-            return response.json()  # type: ignore[no-any-return]
+            try:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                result = response.json()
+                
+                # Debug logging to help troubleshoot response format
+                print(f"[DEBUG] OpenAI Realtime API Response: {result}")
+                
+                return result  # type: ignore[no-any-return]
+            except httpx.HTTPStatusError as e:
+                # Log the error details for debugging
+                error_detail = ""
+                try:
+                    error_detail = e.response.text
+                except Exception:
+                    pass
+                print(f"[ERROR] OpenAI API request failed: {e}")
+                print(f"[ERROR] Response body: {error_detail}")
+                print(f"[ERROR] Request payload: {payload}")
+                raise
 
