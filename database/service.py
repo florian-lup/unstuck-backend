@@ -355,7 +355,7 @@ class DatabaseService:
             game_version: Optional game version
             title: Optional conversation title (overrides auto-generation)
             user_query: User's search query (used for auto-generating titles)
-            conversation_type: Type of conversation ('chat', 'lore', etc.)
+            conversation_type: Type of conversation ('chat')
 
         Returns:
             Conversation: Created conversation
@@ -368,7 +368,7 @@ class DatabaseService:
             elif not generated_title:
                 type_suffix = (
                     conversation_type.title()
-                )  # "chat" -> "Chat", "lore" -> "Lore"
+                )  # "chat" -> "Chat"
                 generated_title = f"{game_name} {type_suffix}"
 
             # Create conversation metadata for other flexible data
@@ -415,7 +415,7 @@ class DatabaseService:
             limit: Maximum number of conversations to return
             offset: Pagination offset
             include_archived: Whether to include archived conversations
-            conversation_type: Filter by conversation type (e.g., 'chat', 'lore')
+            conversation_type: Filter by conversation type (e.g., 'chat')
 
         Returns:
             list[Conversation]: User's conversations

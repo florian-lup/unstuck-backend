@@ -110,7 +110,7 @@ class Conversation(Base):
     # Conversation type and status
     conversation_type = Column(
         String(50), nullable=False, default="chat"
-    )  # chat, lore, etc.
+    )  # chat
     is_archived = Column(String(20), default="active")  # active, archived, deleted
 
     # Audit timestamps

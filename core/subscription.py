@@ -90,7 +90,7 @@ def _check_feature_access(user: User, feature: str) -> None:
 
     Args:
         user: User database record
-        feature: Feature name (e.g., "builds", "guides", "lore")
+        feature: Feature name
 
     Raises:
         HTTPException: If user doesn't have access to the feature
@@ -220,7 +220,7 @@ async def check_feature_access_and_limits(
     3. Increment the user's request counter
 
     Args:
-        feature: Feature name to check access for (e.g., "builds", "guides", "lore")
+        feature: Feature name to check access for
         current_user: Authenticated user from JWT token
         db_session: Database session
 
@@ -231,9 +231,9 @@ async def check_feature_access_and_limits(
         HTTPException: If user doesn't have access or exceeded limits
 
     Usage:
-        @router.post("/builds")
-        async def gaming_builds(
-            user: User = Depends(lambda: check_feature_access_and_limits("builds"))
+        @router.post("/feature")
+        async def feature_endpoint(
+            user: User = Depends(lambda: check_feature_access_and_limits("feature"))
         ):
             # User has access and counter is incremented
             return {"response": "..."}
@@ -290,31 +290,6 @@ async def check_feature_access_only(
     _check_feature_access(user, feature)
 
     return user
-
-
-# Create specific dependencies for each feature
-async def check_builds_access(
-    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
-    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
-) -> User:
-    """Check access to gaming builds feature (no request counting)."""
-    return await check_feature_access_only("builds", current_user, db_session)
-
-
-async def check_guides_access(
-    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
-    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
-) -> User:
-    """Check access to gaming guides feature (no request counting)."""
-    return await check_feature_access_only("guides", current_user, db_session)
-
-
-async def check_lore_access(
-    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
-    db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
-) -> User:
-    """Check access to gaming lore feature (no request counting)."""
-    return await check_feature_access_only("lore", current_user, db_session)
 
 
 def get_request_limit_info(user: User) -> dict[str, int | str | None]:
