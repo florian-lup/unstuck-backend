@@ -5,35 +5,51 @@ An AI-powered Gaming Chat engine built with Perplexity AI. This tool allows user
 ## Features
 
 - 🎮 **Gaming-focused AI search** - Specialized prompts for gaming content
+- 🎙️ **Real-time Voice Chat** - OpenAI Realtime API integration for low-latency voice interactions
 - 💬 **Multi-step conversations** - Maintains conversation context across requests
 - 🔍 **Advanced search filters** - Time-based filtering and search customization
 - 📊 **Usage analytics** - Token usage and performance metrics
 - 🚀 **Modern Python** - Built with Python 3.13 and Poetry
-- 🖥️ **Command line interface** - Easy-to-use testing tools
+- 🖥️ **FastAPI Backend** - Production-ready REST API with Auth0 authentication
+- 🔐 **Secure Authentication** - Auth0 JWT authentication with subscription management
 
 ## Project Structure
 
 ```
 unstuck-backend/
+├── api/
+│   ├── app.py                   # FastAPI application setup
+│   └── routes/
+│       ├── auth.py              # Authentication routes
+│       ├── gaming_chat.py       # Gaming chat routes
+│       ├── voice_chat.py        # Voice chat routes (NEW!)
+│       ├── subscription.py      # Stripe subscription routes
+│       └── health.py            # Health check routes
 ├── clients/
 │   ├── perplexity_client.py     # Perplexity API client
-│   └── __init__.py
+│   └── openai_client.py         # OpenAI Realtime API client (NEW!)
 ├── core/
 │   ├── config.py                # Application configuration
-│   ├── constants.py             # Application constants
-│   └── exceptions.py            # Core exceptions
+│   ├── auth.py                  # Auth0 JWT authentication
+│   ├── subscription.py          # Subscription management
+│   └── rate_limit.py            # Rate limiting
+├── database/
+│   ├── models.py                # SQLAlchemy models
+│   ├── connection.py            # Database connection
+│   └── service.py               # Database service layer
 ├── schemas/
-│   ├── gaming_chat.py         # Request/response schemas
-│   └── __init__.py
+│   ├── gaming_chat.py           # Gaming chat schemas
+│   ├── voice_chat.py            # Voice chat schemas (NEW!)
+│   ├── auth.py                  # Auth schemas
+│   └── subscription.py          # Subscription schemas
 ├── services/
-│   ├── gaming_chat_service.py # Business logic and conversation management
-│   └── __init__.py
-├── utils/
-│   ├── exceptions.py            # Custom exceptions
-│   └── __init__.py
+│   ├── gaming_chat_service.py   # Gaming chat business logic
+│   └── subscription_service.py  # Subscription service
+├── docs/
+│   ├── VOICE_CHAT_IMPLEMENTATION.md  # Full voice chat guide (NEW!)
+│   ├── VOICE_CHAT_QUICKSTART.md      # Quick start guide (NEW!)
+│   └── *.md                          # Other documentation
 ├── main.py                      # Application entry point
-├── test_gaming_chat.py       # Gaming Chat testing interface
-├── test_setup.py               # Setup validation script
 ├── pyproject.toml              # Poetry configuration
 └── .env.example                # Environment variables template
 ```
@@ -42,9 +58,12 @@ unstuck-backend/
 
 ### Prerequisites
 
-- Python 3.13+
+- Python 3.11+
 - Poetry (for dependency management)
 - Perplexity AI API key
+- OpenAI API key (for voice chat feature)
+- Auth0 account (for authentication)
+- PostgreSQL database (Neon recommended)
 
 ### Installation
 
@@ -68,17 +87,43 @@ unstuck-backend/
    # Edit .env and add your Perplexity API key
    ```
 
-4. **Get your Perplexity API key:**
+4. **Get your API keys:**
+
+   **Perplexity API:**
+
    - Visit the [Perplexity API Portal](https://docs.perplexity.ai/getting-started/quickstart)
    - Navigate to the **API Keys** tab and generate a new key
-   - Add it to your `.env` file:
-     ```
-     PERPLEXITY_API_KEY=your_api_key_here
-     ```
+
+   **OpenAI API (for voice chat):**
+
+   - Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Create a new API key with Realtime API access
+
+   **Auth0:**
+
+   - Create account at [Auth0](https://auth0.com)
+   - Set up application and API
+
+   Add all keys to your `.env` file:
+
+   ```
+   PERPLEXITY_API_KEY=your_perplexity_key
+   OPENAI_API_KEY=your_openai_key
+   AUTH0_DOMAIN=your-domain.auth0.com
+   AUTH0_API_AUDIENCE=your-api-audience
+   DATABASE_URL=postgresql://...
+   STRIPE_API_KEY=your_stripe_key
+   ```
 
 ### Running the Application
 
-1. **Application entry point (status & info):**
+1. **Start the FastAPI server:**
+
+   ```bash
+   poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+   Or simply:
 
    ```bash
    poetry run python main.py
@@ -144,23 +189,72 @@ poetry run python test_gaming_chat.py --conversation
 - Gaming hardware comparisons and recommendations
 - Industry news and trends
 
+### 🎙️ Real-time Voice Chat (NEW!)
+
+- **OpenAI Realtime API Integration**: Ultra-low latency voice interactions (<500ms)
+- **Ephemeral Tokens**: Secure token generation for direct client-to-OpenAI connections
+- **8 Voice Options**: alloy, echo, shimmer, ash, ballad, coral, sage, verse
+- **Game-Specific AI**: Automatically tailors assistant to your current game
+- **WebSocket-based**: Direct WebSocket connection from Electron client
+- **Optimized for Gaming**: Perfect for in-game voice assistance and live gameplay help
+
+**Quick Start:**
+
+- See [Voice Chat Quick Start Guide](docs/VOICE_CHAT_QUICKSTART.md)
+- Full implementation: [Voice Chat Implementation Guide](docs/VOICE_CHAT_IMPLEMENTATION.md)
+- Game examples: [Voice Chat Game Examples](docs/VOICE_CHAT_GAME_EXAMPLES.md)
+
+**API Endpoints:**
+
+- `POST /api/v1/voice/session` - Create ephemeral token (with optional `game` parameter)
+- `GET /api/v1/voice/info` - Get available voices and info
+
+**Example:**
+
+```javascript
+// Create game-specific voice assistant
+fetch("/api/v1/voice/session", {
+  body: JSON.stringify({
+    voice: "alloy",
+    game: "Elden Ring", // Auto-tailors AI to this game
+  }),
+});
+```
+
 ### 💬 Conversation Context
 
 - Maintains conversation history across multiple queries
 - Follow-up questions understand previous context
 - Each conversation gets a unique ID for tracking
+- Full database persistence with PostgreSQL
 
 ## Configuration
 
 Key configuration options in your `.env` file:
 
 ```bash
-# Required
-PERPLEXITY_API_KEY=your_api_key_here
+# Required - Perplexity AI
+PERPLEXITY_API_KEY=your_perplexity_key_here
+
+# Required - OpenAI (Voice Chat)
+OPENAI_API_KEY=your_openai_key_here
+
+# Required - Auth0
+AUTH0_DOMAIN=your-domain.auth0.com
+AUTH0_API_AUDIENCE=your-api-audience
+
+# Required - Database
+DATABASE_URL=postgresql://user:pass@host/db
+
+# Required - Stripe
+STRIPE_API_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID_COMMUNITY=price_...
 
 # Optional
 DEBUG=false                  # Debug mode
-SECRET_KEY=your-secret-key   # For future JWT tokens
+SECRET_KEY=your-secret-key   # JWT secret
+PORT=8000                    # Server port
 ```
 
 ## Search Parameters
@@ -173,9 +267,13 @@ The API supports various search parameters:
 ### 📦 Core Dependencies
 
 ```toml
-"pydantic (>=2.11.9,<3.0.0)",       # Data validation and serialization
-"pydantic-settings (>=2.10.1,<3.0.0)", # Configuration management
-"perplexityai (>=0.10.0,<0.11.0)"   # Official Perplexity SDK
+"pydantic (>=2.11.9,<3.0.0)",           # Data validation and serialization
+"pydantic-settings (>=2.10.1,<3.0.0)",  # Configuration management
+"perplexityai (>=0.10.0,<0.11.0)",      # Official Perplexity SDK
+"openai (>=1.59.8,<2.0.0)",             # OpenAI Realtime API
+"fastapi (>=0.115.0,<0.116.0)",         # Modern web framework
+"sqlalchemy[asyncio] (>=2.0.25,<3.0.0)", # ORM with async support
+"stripe (>=11.3.0,<12.0.0)",            # Payment processing
 ```
 
 ## Development
