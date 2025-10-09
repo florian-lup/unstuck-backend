@@ -18,7 +18,7 @@ class OpenAIRealtimeClient:
 
     async def create_ephemeral_token(
         self,
-        voice: str = "alloy",
+        voice: str = "marin",
         instructions: str | None = None,
         max_response_output_tokens: int | str = "inf",
     ) -> dict[str, Any]:
@@ -32,7 +32,7 @@ class OpenAIRealtimeClient:
 
         Args:
             voice: Voice to use for audio responses.
-                   Options: alloy, echo, shimmer, ash, ballad, coral, sage, verse
+                   Options: marin (default), cedar
             instructions: System instructions for the AI assistant
             max_response_output_tokens: Maximum tokens in response ("inf" for unlimited)
 

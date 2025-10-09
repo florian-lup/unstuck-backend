@@ -8,14 +8,8 @@ from pydantic import BaseModel, Field
 class VoiceOption(str, Enum):
     """Available voice options for OpenAI Realtime API."""
 
-    ALLOY = "alloy"
-    ECHO = "echo"
-    SHIMMER = "shimmer"
-    ASH = "ash"
-    BALLAD = "ballad"
-    CORAL = "coral"
-    SAGE = "sage"
-    VERSE = "verse"
+    MARIN = "marin"  # Default - warm and friendly
+    CEDAR = "cedar"  # Alternative - clear and professional
 
 
 class VoiceChatSessionRequest(BaseModel):

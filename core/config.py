@@ -61,12 +61,12 @@ class Settings(BaseSettings):
         ..., description="OpenAI API key", alias="OPENAI_API_KEY"
     )
     openai_realtime_model: str = Field(
-        default="gpt-realtime-mini-2025-10-06",
+        default="gpt-realtime-mini",
         description="OpenAI Realtime model for voice chat",
     )
     openai_realtime_voice: str = Field(
-        default="alloy",
-        description="Default voice for OpenAI Realtime API (alloy, echo, shimmer, ash, ballad, coral, sage, verse)",
+        default="marin",
+        description="Default voice for OpenAI Realtime API (marin, cedar)",
     )
 
     # Stripe Configuration
