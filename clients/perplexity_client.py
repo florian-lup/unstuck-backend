@@ -122,7 +122,7 @@ class PerplexityClient:
     def search(
         self,
         query: str | list[str],
-        max_results: int = 10,
+        max_results: int = 5,
         max_tokens_per_page: int = 1024,
         **kwargs: Any,
     ) -> Any:

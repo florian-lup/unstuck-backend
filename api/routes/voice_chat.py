@@ -33,11 +33,10 @@ VOICE_CHAT_TOOLS = [
         "type": "function",
         "name": "gaming_search",
         "description": (
-            "Search for current gaming information, strategies, guides, patch notes, "
-            "builds, or any game-related content. Use this when you need fresh, "
+            "Search for current gaming information and any game-related content. "
+            "Use this when you need fresh, "
             "up-to-date information that may have changed recently or when your "
-            "knowledge might be outdated. Always use this for: patch notes, current meta, "
-            "recent updates, tier lists, new strategies, or specific build guides."
+            "knowledge might be outdated."
         ),
         "parameters": {
             "type": "object",
@@ -45,11 +44,6 @@ VOICE_CHAT_TOOLS = [
                 "query": {
                     "type": "string",
                     "description": "The search query to find gaming information",
-                },
-                "max_results": {
-                    "type": "integer",
-                    "description": "Maximum number of results to return (default: 5)",
-                    "default": 5,
                 },
             },
             "required": ["query"],
@@ -193,7 +187,6 @@ async def execute_tool_call(
         if request_data.tool_name == "gaming_search":
             # Extract arguments
             query = request_data.arguments.get("query")
-            max_results = request_data.arguments.get("max_results", 5)
             
             if not query:
                 return ToolCallResponse(
@@ -206,7 +199,6 @@ async def execute_tool_call(
             try:
                 search_request = SearchRequest(
                     query=query,
-                    max_results=min(max_results, 10),  # Cap at 10 for performance
                 )
                 search_response = await search_service.search(search_request)
                 

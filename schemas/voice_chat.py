@@ -33,18 +33,18 @@ class VoiceChatSessionRequest(BaseModel):
         """
         base_search_instructions = (
             "\n\n**IMPORTANT: Using the gaming_search tool:**\n"
-            "- ALWAYS use gaming_search when asked about: patch notes, current meta, "
-            "recent updates, tier lists, new strategies, specific builds, or any information "
-            "that may have changed recently.\n"
-            "- Use gaming_search when your knowledge might be outdated or when you're uncertain.\n"
-            "- For time-sensitive information (e.g., 'current best build'), always search first.\n"
+            "- ALWAYS use gaming_search when:\n"
+            "you don't know the answer.\n"
+            "you don't have the information for this version of the game.\n"
+            "your knowledge might be outdated.\n"
+            "you're uncertain.\n"
             "- Include the game name in your search query for better results."
         )
         
         if self.game:
             return (
                 f"You are a helpful gaming assistant specializing in {self.game}. "
-                f"You help players with tips, strategies, walkthroughs, builds, "
+                f"You help players with game information"
                 f"and gameplay questions specifically for {self.game}. "
                 "Be conversational, friendly, and enthusiastic. "
                 "Provide accurate information and helpful guidance. "
@@ -53,8 +53,7 @@ class VoiceChatSessionRequest(BaseModel):
             )
         
         return (
-            "You are a helpful gaming assistant. You help gamers with tips, "
-            "strategies, game information, and general gaming questions. "
+            "You are a helpful gaming assistant. You help players with game information, and general gaming questions. "
             "Be conversational, friendly, and enthusiastic about gaming."
             f"{base_search_instructions}"
         )
