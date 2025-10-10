@@ -50,16 +50,27 @@ class User(Base):
         String(50)
     )  # active, canceled, past_due, etc. (mirrors Stripe status)
 
-    # Request tracking fields for subscription limits
+    # Request tracking fields for subscription limits - GAMING CHAT
     total_requests: Mapped[int] = mapped_column(
         nullable=False, default=0
-    )  # Total lifetime requests (for free tier)
+    )  # Total lifetime gaming chat requests (for free tier)
     monthly_requests: Mapped[int] = mapped_column(
         nullable=False, default=0
-    )  # Monthly requests (for community tier)
+    )  # Monthly gaming chat requests (for community tier)
     request_count_reset_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
-    )  # Date when monthly counter was last reset
+    )  # Date when monthly gaming chat counter was last reset
+
+    # Request tracking fields for VOICE CHAT
+    total_voice_requests: Mapped[int] = mapped_column(
+        nullable=False, default=0
+    )  # Total lifetime voice chat requests (for free tier)
+    monthly_voice_requests: Mapped[int] = mapped_column(
+        nullable=False, default=0
+    )  # Monthly voice chat requests (for community tier)
+    voice_request_count_reset_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )  # Date when monthly voice chat counter was last reset
 
     # Audit timestamps
     created_at: Mapped[datetime] = mapped_column(

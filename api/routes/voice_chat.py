@@ -9,7 +9,7 @@ from clients.openai_client import OpenAIRealtimeClient
 from core.auth import get_current_user
 from core.config import settings
 from core.rate_limit import RateLimited
-from core.subscription import check_request_limits_only
+from core.subscription import check_voice_request_limits_only
 from database.connection import get_db_session
 from database.models import User
 from schemas.auth import AuthenticatedUser
@@ -23,7 +23,7 @@ async def create_voice_session(
     request_data: VoiceChatSessionRequest,
     request: Request,
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
-    internal_user: User = Depends(check_request_limits_only),  # noqa: B008
+    internal_user: User = Depends(check_voice_request_limits_only),  # noqa: B008
     db_session: AsyncSession = Depends(get_db_session),  # noqa: B008
     _: RateLimited = None,
 ) -> VoiceChatSessionResponse:
@@ -38,8 +38,8 @@ async def create_voice_session(
     single WebSocket session, ensuring your API key is never exposed to clients.
 
     **Request Limits:**
-    - Free tier: 150 total requests (lifetime, never resets)
-    - Community tier: 300 requests per month (resets every 30 days)
+    - Free tier: 60 total voice chat requests (lifetime, never resets)
+    - Community tier: 150 voice chat requests per month (resets every 30 days)
 
     **Client Implementation:**
     1. Detect the currently running game (Electron client handles this)
