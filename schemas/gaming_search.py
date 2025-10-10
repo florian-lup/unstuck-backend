@@ -12,10 +12,10 @@ class SearchRequest(BaseModel):
         ..., description="Search query or list of queries for multi-query search"
     )
     max_results: int = Field(
-        default=10, ge=1, le=50, description="Maximum number of results to return"
+        default=5, ge=1, le=50, description="Maximum number of results to return"
     )
     max_tokens_per_page: int = Field(
-        default=1024, ge=256, le=4096, description="Content extraction limit per page"
+        default=4096, ge=256, le=4096, description="Content extraction limit per page"
     )
 
 
