@@ -20,6 +20,7 @@ class OpenAIRealtimeClient:
         self,
         voice: str = "marin",
         instructions: str | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """
         Create an ephemeral token for client-side Realtime API access (GA version).
@@ -33,6 +34,7 @@ class OpenAIRealtimeClient:
             voice: Voice to use for audio responses.
                    Options: marin (default), cedar
             instructions: System instructions for the AI assistant
+            tools: List of tool definitions for function calling
 
         Returns:
             dict containing (GA API format):
@@ -43,6 +45,7 @@ class OpenAIRealtimeClient:
                   - model: Model being used
                   - instructions: The instructions configured for the session
                   - audio: Audio configuration including voice, format, etc.
+                  - tools: Tool definitions if provided
 
         Raises:
             httpx.HTTPError: If the API request fails
@@ -68,6 +71,9 @@ class OpenAIRealtimeClient:
         # Add optional parameters
         if instructions:
             session_config["instructions"] = instructions
+            
+        if tools:
+            session_config["tools"] = tools
 
         # Note: max_response_output_tokens is not supported in GA API
         # The parameter has been removed from the GA interface

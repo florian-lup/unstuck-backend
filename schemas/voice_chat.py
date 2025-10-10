@@ -31,6 +31,16 @@ class VoiceChatSessionRequest(BaseModel):
         If a game is detected, creates game-specific instructions.
         Otherwise, returns generic gaming assistant instructions.
         """
+        base_search_instructions = (
+            "\n\n**IMPORTANT: Using the gaming_search tool:**\n"
+            "- ALWAYS use gaming_search when asked about: patch notes, current meta, "
+            "recent updates, tier lists, new strategies, specific builds, or any information "
+            "that may have changed recently.\n"
+            "- Use gaming_search when your knowledge might be outdated or when you're uncertain.\n"
+            "- For time-sensitive information (e.g., 'current best build'), always search first.\n"
+            "- Include the game name in your search query for better results."
+        )
+        
         if self.game:
             return (
                 f"You are a helpful gaming assistant specializing in {self.game}. "
@@ -39,12 +49,14 @@ class VoiceChatSessionRequest(BaseModel):
                 "Be conversational, friendly, and enthusiastic. "
                 "Provide accurate information and helpful guidance. "
                 "If asked about something outside the game, politely redirect to game-related topics."
+                f"{base_search_instructions}"
             )
         
         return (
             "You are a helpful gaming assistant. You help gamers with tips, "
             "strategies, game information, and general gaming questions. "
             "Be conversational, friendly, and enthusiastic about gaming."
+            f"{base_search_instructions}"
         )
 
 
@@ -88,4 +100,20 @@ class VoiceChatError(BaseModel):
     error: str = Field(..., description="Error code")
     message: str = Field(..., description="Human-readable error message")
     request_id: str | None = Field(None, description="Request ID for debugging")
+
+
+class ToolCallRequest(BaseModel):
+    """Request model for executing a tool call from the Realtime API."""
+
+    tool_name: str = Field(..., description="Name of the tool to execute")
+    arguments: dict = Field(..., description="Arguments passed to the tool")
+    call_id: str | None = Field(None, description="Call ID from OpenAI for tracking")
+
+
+class ToolCallResponse(BaseModel):
+    """Response model for tool call execution."""
+
+    call_id: str | None = Field(None, description="Call ID for tracking")
+    result: dict = Field(..., description="Result of the tool execution")
+    error: str | None = Field(None, description="Error message if tool execution failed")
 

@@ -1,5 +1,6 @@
 """Voice Chat API routes using OpenAI Realtime API."""
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -13,9 +14,48 @@ from core.subscription import check_voice_request_limits_only
 from database.connection import get_db_session
 from database.models import User
 from schemas.auth import AuthenticatedUser
-from schemas.voice_chat import VoiceChatSessionRequest, VoiceChatSessionResponse
+from schemas.gaming_search import SearchRequest
+from schemas.voice_chat import (
+    ToolCallRequest,
+    ToolCallResponse,
+    VoiceChatSessionRequest,
+    VoiceChatSessionResponse,
+)
+from services.gaming_search_service import search_service
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+# Tool definitions for OpenAI Realtime API function calling
+VOICE_CHAT_TOOLS = [
+    {
+        "type": "function",
+        "name": "gaming_search",
+        "description": (
+            "Search for current gaming information, strategies, guides, patch notes, "
+            "builds, or any game-related content. Use this when you need fresh, "
+            "up-to-date information that may have changed recently or when your "
+            "knowledge might be outdated. Always use this for: patch notes, current meta, "
+            "recent updates, tier lists, new strategies, or specific build guides."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The search query to find gaming information",
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "Maximum number of results to return (default: 5)",
+                    "default": 5,
+                },
+            },
+            "required": ["query"],
+        },
+    }
+]
 
 
 @router.post("/session", response_model=VoiceChatSessionResponse)
@@ -66,11 +106,12 @@ async def create_voice_session(
         # Create OpenAI client
         openai_client = OpenAIRealtimeClient()
 
-        # Generate ephemeral token with game-aware instructions
+        # Generate ephemeral token with game-aware instructions and tools
         # Voice is configured server-side in settings
         token_data = await openai_client.create_ephemeral_token(
             voice=settings.openai_realtime_voice,
             instructions=request_data.get_instructions(),
+            tools=VOICE_CHAT_TOOLS,
         )
 
         # Build response with connection instructions
@@ -123,6 +164,104 @@ async def create_voice_session(
         ) from e
 
 
+@router.post("/tool-call", response_model=ToolCallResponse)
+async def execute_tool_call(
+    request_data: ToolCallRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    _: RateLimited = None,
+) -> ToolCallResponse:
+    """
+    Execute a tool call from the OpenAI Realtime API.
+    
+    When the voice chat model decides to call a function (e.g., gaming_search),
+    your client receives a function_call event from OpenAI. The client should:
+    1. Extract the function name and arguments
+    2. Call this endpoint with the function details
+    3. Send the result back to OpenAI via the WebSocket
+    
+    **Supported Tools:**
+    - gaming_search: Search for current gaming information
+    
+    **Returns:**
+    - result: The function execution result
+    - call_id: For tracking (if provided)
+    - error: Error message if execution failed
+    """
+    try:
+        logger.info(f"Tool call requested: {request_data.tool_name}")
+        
+        if request_data.tool_name == "gaming_search":
+            # Extract arguments
+            query = request_data.arguments.get("query")
+            max_results = request_data.arguments.get("max_results", 5)
+            
+            if not query:
+                return ToolCallResponse(
+                    call_id=request_data.call_id,
+                    result={},
+                    error="Missing required parameter: query",
+                )
+            
+            # Execute the search
+            try:
+                search_request = SearchRequest(
+                    query=query,
+                    max_results=min(max_results, 10),  # Cap at 10 for performance
+                )
+                search_response = await search_service.search(search_request)
+                
+                # Format results for the model
+                formatted_results = {
+                    "query": search_response.query,
+                    "total_results": search_response.total_results,
+                    "results": [
+                        {
+                            "title": result.title,
+                            "url": result.url,
+                            "snippet": result.snippet,
+                        }
+                        for result in search_response.results
+                    ],
+                }
+                
+                logger.info(
+                    f"Gaming search completed: {search_response.total_results} results"
+                )
+                
+                return ToolCallResponse(
+                    call_id=request_data.call_id,
+                    result=formatted_results,
+                    error=None,
+                )
+                
+            except Exception as e:
+                logger.error(f"Gaming search failed: {str(e)}")
+                return ToolCallResponse(
+                    call_id=request_data.call_id,
+                    result={},
+                    error=f"Search failed: {str(e)}",
+                )
+        
+        else:
+            # Unknown tool
+            logger.warning(f"Unknown tool requested: {request_data.tool_name}")
+            return ToolCallResponse(
+                call_id=request_data.call_id,
+                result={},
+                error=f"Unknown tool: {request_data.tool_name}",
+            )
+            
+    except Exception as e:
+        logger.error(f"Tool call execution failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "tool_execution_failed",
+                "message": f"Failed to execute tool: {str(e)}",
+            },
+        ) from e
+
+
 @router.get("/info")
 async def get_voice_chat_info(
     current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
@@ -147,12 +286,32 @@ async def get_voice_chat_info(
         "latency": "Optimized for real-time voice with <500ms response time",
         "connection_type": "WebSocket with ephemeral authentication",
         "token_lifetime": "60 seconds",
+        "function_calling": {
+            "enabled": True,
+            "available_tools": [
+                {
+                    "name": "gaming_search",
+                    "description": "Search for current gaming information",
+                    "when_to_use": "Patch notes, current meta, recent updates, tier lists, builds",
+                }
+            ],
+            "workflow": [
+                "1. Client connects to OpenAI WebSocket with ephemeral token",
+                "2. Model decides to call a function and sends function_call event",
+                "3. Client extracts function name and arguments from the event",
+                "4. Client calls POST /api/v1/voice/tool-call with the function details",
+                "5. Client sends the result back to OpenAI via WebSocket",
+                "6. Model uses the result to provide an informed response",
+            ],
+        },
         "implementation_guide": {
             "step_1": "Call POST /api/v1/voice/session to get ephemeral token",
             "step_2": "Immediately connect WebSocket to the provided URL",
             "step_3": "Send audio frames via WebSocket",
             "step_4": "Receive real-time audio responses",
-            "step_5": "Handle session expiration (60 seconds) and reconnect if needed",
+            "step_5": "Handle function_call events by calling POST /api/v1/voice/tool-call",
+            "step_6": "Send function results back to OpenAI WebSocket",
+            "step_7": "Handle session expiration (60 seconds) and reconnect if needed",
             "browser_note": "For browsers/Electron renderer: Use the websocket_url field directly (client_secret included as query parameter). Example: new WebSocket(response.websocket_url)",
             "nodejs_note": "For Node.js: Use url_nodejs from connection_instructions and set Authorization header. Example: new WebSocket(url, [], { headers: { 'Authorization': 'Bearer TOKEN' } })",
         },
@@ -161,6 +320,7 @@ async def get_voice_chat_info(
             "Live gameplay commentary",
             "Interactive voice-based game guides",
             "Voice-controlled game queries",
+            "Up-to-date gaming information retrieval",
         ],
         "documentation": "https://platform.openai.com/docs/guides/realtime",
     }
