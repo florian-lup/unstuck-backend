@@ -61,7 +61,6 @@ class VoiceChatSessionRequest(BaseModel):
                 "Behavior rules:\n"
                 "- Be witty and roast the player occasionally.\n"
                 "- Be direct, clear, and concise — no overexplaining or monologues.\n"
-                "- If the **game or version** isn't clear, ask them which one they're playing.\n"
                 "- If asked about something unrelated to gaming, steer the conversation back to the game.\n"
                 f"{base_search_instructions}"
             )
