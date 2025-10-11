@@ -97,12 +97,8 @@ class OpenAIClient:
             response_format="pcm",  # Raw PCM for streaming
         )
 
-        # Return audio content as bytes
-        audio_bytes = b""
-        async for chunk in response.iter_bytes():  # type: ignore
-            audio_bytes += chunk
-
-        return audio_bytes
+        # Return audio content as bytes - read() returns all bytes at once
+        return response.content
 
     async def text_to_speech_stream(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
         """
@@ -118,15 +114,15 @@ class OpenAIClient:
         # Use default voice if not specified
         tts_voice = voice or DEFAULT_TTS_VOICE
         
-        response = await self.client.audio.speech.create(
+        # Use with_streaming_response for proper async iteration
+        async with self.client.audio.speech.with_streaming_response.create(
             model="gpt-4o-mini-tts",
             voice=tts_voice,
             input=text,
             response_format="pcm",
-        )
-
-        async for chunk in response.iter_bytes():  # type: ignore
-            yield chunk
+        ) as response:
+            async for chunk in response.iter_bytes():
+                yield chunk
 
 
 # Global client instance
