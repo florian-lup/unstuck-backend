@@ -32,7 +32,7 @@ VOICE_CHAT_TOOLS = [
         "type": "function",
         "name": "sonar_search",
         "description": (
-            "Real-time web search for current, up-to-date information about gaming or any topic. "
+            "Real-time web search for current, up-to-date information about gaming. "
             "Uses Perplexity's Sonar model to search the web and provide accurate, recent information. "
             "Use this when you need fresh information that may have changed recently, or when your knowledge might be outdated."
         ),
