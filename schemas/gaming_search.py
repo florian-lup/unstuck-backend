@@ -12,10 +12,10 @@ class SearchRequest(BaseModel):
         ..., description="Search query or list of queries for multi-query search"
     )
     max_results: int = Field(
-        default=5, ge=1, le=50, description="Maximum number of results to return"
+        default=10, ge=1, le=50, description="Maximum number of results to return"
     )
     max_tokens_per_page: int = Field(
-        default=4096, ge=256, le=4096, description="Content extraction limit per page"
+        default=2048, ge=256, le=4096, description="Content extraction limit per page"
     )
 
 
@@ -32,12 +32,16 @@ class SearchResponse(BaseModel):
     """Response schema for Search queries."""
 
     id: str = Field(..., description="Unique search response ID")
-    results: list[SearchResultItem] = Field(
-        default_factory=list, description="Search results"
+    results: list[SearchResultItem] | list[list[SearchResultItem]] = Field(
+        default_factory=list, 
+        description="Search results. For single query: flat list. For multi-query: list of lists, one per query."
     )
     query: str | list[str] = Field(..., description="Original search query")
     total_results: int = Field(..., description="Total number of results returned")
     created: int = Field(..., description="Unix timestamp of response creation")
+    is_multi_query: bool = Field(
+        default=False, description="Whether this was a multi-query search"
+    )
 
 
 class SearchErrorResponse(BaseModel):

@@ -33,17 +33,31 @@ VOICE_CHAT_TOOLS = [
         "type": "function",
         "name": "gaming_search",
         "description": (
-            "Search for current gaming information and any game-related content. "
-            "Use this when you need fresh, "
-            "up-to-date information that may have changed recently or when your "
-            "knowledge might be outdated."
+            "Web search for current gaming information and any game-related content. "
+            "Tool for retrieving fresh, up-to-date information that may have changed recently "
+            "Supports multi-query search: you can provide multiple related queries (up to 5) "
+            "in a single request for comprehensive research covering different aspects of a topic."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "query": {
-                    "type": "string",
-                    "description": "The search query to find gaming information",
+                    "oneOf": [
+                        {"type": "string"},
+                        {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "minItems": 1,
+                            "maxItems": 5,
+                        },
+                    ],
+                    "description": (
+                        "Single search query string, OR an array of up to 5 related queries "
+                        "for comprehensive multi-query search. "
+                        "Example single: 'best League of Legends builds season 14'. "
+                        "Example multi: ['League of Legends meta champions 2024', "
+                        "'best ADC builds patch 14.1', 'jungle tier list current patch']"
+                    ),
                 },
             },
             "required": ["query"],
@@ -203,22 +217,69 @@ async def execute_tool_call(
                 search_response = await search_service.search(search_request)
                 
                 # Format results for the model
-                formatted_results = {
-                    "query": search_response.query,
-                    "total_results": search_response.total_results,
-                    "results": [
-                        {
-                            "title": result.title,
-                            "url": result.url,
-                            "snippet": result.snippet,
+                # Handle both single-query and multi-query responses
+                if search_response.is_multi_query:
+                    # Multi-query: format results grouped by query
+                    queries = search_response.query if isinstance(search_response.query, list) else [search_response.query]
+                    
+                    # Type check: ensure results is a list of lists for multi-query
+                    if isinstance(search_response.results, list) and len(search_response.results) > 0:
+                        results_by_query = []
+                        for i, query_results in enumerate(search_response.results):
+                            if isinstance(query_results, list):
+                                results_by_query.append({
+                                    "query": queries[i] if i < len(queries) else f"Query {i+1}",
+                                    "results": [
+                                        {
+                                            "title": result.title,
+                                            "url": result.url,
+                                            "snippet": result.snippet,
+                                        }
+                                        for result in query_results
+                                    ],
+                                    "count": len(query_results),
+                                })
+                        
+                        formatted_results = {
+                            "query_type": "multi-query",
+                            "queries": queries,
+                            "total_results": search_response.total_results,
+                            "results_by_query": results_by_query,
                         }
-                        for result in search_response.results
-                    ],
-                }
-                
-                logger.info(
-                    f"Gaming search completed: {search_response.total_results} results"
-                )
+                    else:
+                        formatted_results = {
+                            "query_type": "multi-query",
+                            "queries": queries,
+                            "total_results": 0,
+                            "results_by_query": [],
+                        }
+                    
+                    logger.info(
+                        f"Multi-query search completed: {len(queries)} queries, "
+                        f"{search_response.total_results} total results"
+                    )
+                else:
+                    # Single query: format as before
+                    # Type check: ensure results is a flat list for single query
+                    results_list = []
+                    if isinstance(search_response.results, list):
+                        for result in search_response.results:
+                            if not isinstance(result, list):  # Ensure it's a SearchResultItem, not a list
+                                results_list.append({
+                                    "title": result.title,
+                                    "url": result.url,
+                                    "snippet": result.snippet,
+                                })
+                    
+                    formatted_results = {
+                        "query_type": "single-query",
+                        "query": search_response.query,
+                        "total_results": search_response.total_results,
+                        "results": results_list,
+                    }
+                    logger.info(
+                        f"Gaming search completed: {search_response.total_results} results"
+                    )
                 
                 return ToolCallResponse(
                     call_id=request_data.call_id,
@@ -283,8 +344,19 @@ async def get_voice_chat_info(
             "available_tools": [
                 {
                     "name": "gaming_search",
-                    "description": "Search for current gaming information",
+                    "description": "Search for current gaming information with single or multi-query support",
                     "when_to_use": "Patch notes, current meta, recent updates, tier lists, builds",
+                    "supports_multi_query": True,
+                    "multi_query_info": {
+                        "max_queries": 5,
+                        "description": "Can accept up to 5 related queries in a single request for comprehensive research",
+                        "example_single": "best League of Legends builds season 14",
+                        "example_multi": [
+                            "League of Legends meta champions 2024",
+                            "best ADC builds patch 14.1",
+                            "jungle tier list current patch"
+                        ],
+                    },
                 }
             ],
             "workflow": [
