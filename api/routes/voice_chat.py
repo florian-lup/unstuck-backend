@@ -82,13 +82,14 @@ class WebSocketConnectionManager:
 manager = WebSocketConnectionManager()
 
 
-async def handle_start_session(data: dict[str, Any], websocket: WebSocket) -> None:
+async def handle_start_session(data: dict[str, Any], websocket: WebSocket, already_accepted: bool = False) -> None:
     """
     Handle start session message.
 
     Args:
         data: Message data
         websocket: WebSocket connection
+        already_accepted: Whether the websocket has already been accepted
     """
     try:
         message = StartSessionMessage(**data)
@@ -98,7 +99,13 @@ async def handle_start_session(data: dict[str, Any], websocket: WebSocket) -> No
         voice_chat_service.create_session(session_id)
 
         # Store WebSocket connection
-        await manager.connect(session_id, websocket)
+        if already_accepted:
+            # WebSocket already accepted, just register it
+            manager.active_connections[session_id] = websocket
+            logger.info(f"WebSocket registered for session: {session_id}")
+        else:
+            # Accept and register the connection
+            await manager.connect(session_id, websocket)
 
         # Send confirmation
         response = SessionStartedMessage(session_id=session_id)
@@ -263,6 +270,9 @@ async def voice_chat_websocket(websocket: WebSocket) -> None:
     - Receives audio chunks from client
     - Sends transcription, response text, and audio response back to client
     """
+    # Accept WebSocket connection first (required before any send/receive)
+    await websocket.accept()
+    
     session_id = None
 
     try:
@@ -280,8 +290,8 @@ async def voice_chat_websocket(websocket: WebSocket) -> None:
             await websocket.close()
             return
 
-        # Handle start session
-        await handle_start_session(data, websocket)
+        # Handle start session (websocket already accepted above)
+        await handle_start_session(data, websocket, already_accepted=True)
         session_id = data.get("session_id")
 
         # Process messages
