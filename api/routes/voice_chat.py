@@ -15,11 +15,9 @@ from schemas.voice_chat import (
     EndSessionMessage,
     ErrorMessage,
     MessageType,
-    ResponseTextMessage,
     SessionEndedMessage,
     SessionStartedMessage,
     StartSessionMessage,
-    TranscriptionMessage,
 )
 from services.voice_chat_service import voice_chat_service
 
@@ -188,25 +186,11 @@ async def handle_audio_end(data: dict[str, Any]) -> None:
             audio_format
         )
 
-        # Send transcription
-        transcription_response = TranscriptionMessage(
-            session_id=session_id,
-            text=transcribed_text
-        )
-        await manager.send_json(session_id, transcription_response.model_dump())
-
         # Step 2: Generate response
         response_text = await voice_chat_service.generate_text_response(
             session_id,
             transcribed_text
         )
-
-        # Send response text
-        text_response = ResponseTextMessage(
-            session_id=session_id,
-            text=response_text
-        )
-        await manager.send_json(session_id, text_response.model_dump())
 
         # Step 3: Convert to speech and stream (uses backend-configured voice)
         # Send stream start
