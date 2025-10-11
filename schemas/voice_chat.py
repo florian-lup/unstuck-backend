@@ -32,24 +32,22 @@ class VoiceChatSessionRequest(BaseModel):
         Otherwise, returns generic gaming assistant instructions.
         """
         base_search_instructions = (
-            "\n\n**IMPORTANT: Using the gaming_search tool:**\n"
-            "- ALWAYS use gaming_search when:\n"
+            "\n\n**IMPORTANT: Using the sonar_search tool:**\n"
+            "- ALWAYS use sonar_search when:\n"
             "  • you don't know the answer.\n"
             "  • you don't have the information for this version of the game.\n"
             "  • your knowledge might be outdated.\n"
+            "  • you need current, real-time information.\n"
             "  • you're uncertain.\n"
             "- Include the game name in your search query for better results.\n"
             "\n"
-            "**Multi-Query Feature:**\n"
-            "- gaming_search supports MULTI-QUERY searches (up to 5 related queries).\n"
-            "- Use multi-query when the user's question has multiple aspects or you need comprehensive information.\n"
-            "- Examples:\n"
-            "  • Single query: 'League of Legends best ADC builds patch 14.1'\n"
-            "  • Multi-query: ['League of Legends meta champions 2024', 'best ADC builds patch 14.1', 'jungle tier list current patch']\n"
-            "\n"
             "**Best Practices:**\n"
-            "- Query optimisation: Use highly specific queries for more targeted results. Specific queries with context, game versions, and precise terminology yield more relevant and actionable results. \n"
-            "- Multi-query: Use multi-query for comprehensive research. Break your main topic into related sub-queries to cover all aspects of your research. Use the multi-query search feature to run multiple related queries in a single request for more comprehensive and relevant information.\n"
+            "- Query optimization: Use highly specific queries for more targeted results.\n"
+            "- Include context: Mention game versions, patch numbers, and precise terminology.\n"
+            "- Example queries:\n"
+            "  • 'League of Legends best ADC builds patch 14.1'\n"
+            "  • 'Elden Ring Shadow of the Erdtree boss weaknesses'\n"
+            "  • 'Valorant current meta agents ranked competitive'\n"
         )
         
         if self.game:

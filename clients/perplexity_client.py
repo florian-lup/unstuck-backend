@@ -119,6 +119,43 @@ class PerplexityClient:
             **kwargs,
         )
 
+    def sonar_search(
+        self,
+        query: str,
+        model: str = "sonar",
+        search_context_size: str = "low",
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Perform a simple, stateless web search using Perplexity Sonar.
+        
+        This is designed for tool/function calling scenarios where you need
+        quick, current information without conversation context.
+        No conversation history, no database storage - just query in, answer out.
+
+        Args:
+            query: The search query
+            model: The model to use (default: "sonar")
+            search_context_size: Context size for web search ("low", "medium", "high", default: "medium")
+            **kwargs: Additional parameters for the API
+
+        Returns:
+            Chat completion response with search results
+        """
+        messages = [
+            {
+                "role": "user",
+                "content": query,
+            }
+        ]
+
+        return self.chat_completion(
+            messages=messages,
+            model=model,
+            search_context_size=search_context_size,
+            **kwargs,
+        )
+
     def search(
         self,
         query: str | list[str],

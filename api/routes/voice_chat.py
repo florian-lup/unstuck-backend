@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.openai_client import OpenAIRealtimeClient
+from clients.perplexity_client import perplexity_client
 from core.auth import get_current_user
 from core.config import settings
 from core.rate_limit import RateLimited
@@ -14,14 +15,12 @@ from core.subscription import check_voice_request_limits_only
 from database.connection import get_db_session
 from database.models import User
 from schemas.auth import AuthenticatedUser
-from schemas.gaming_search import SearchRequest
 from schemas.voice_chat import (
     ToolCallRequest,
     ToolCallResponse,
     VoiceChatSessionRequest,
     VoiceChatSessionResponse,
 )
-from services.gaming_search_service import search_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -31,32 +30,20 @@ logger = logging.getLogger(__name__)
 VOICE_CHAT_TOOLS = [
     {
         "type": "function",
-        "name": "gaming_search",
+        "name": "sonar_search",
         "description": (
-            "Web search for current gaming information and any game-related content. "
-            "Tool for retrieving fresh, up-to-date information that may have changed recently "
-            "Supports multi-query search: you can provide multiple related queries (up to 5) "
-            "in a single request for comprehensive research covering different aspects of a topic."
+            "Real-time web search for current, up-to-date information about gaming or any topic. "
+            "Uses Perplexity's Sonar model to search the web and provide accurate, recent information. "
+            "Use this when you need fresh information that may have changed recently, or when your knowledge might be outdated."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "query": {
-                    "oneOf": [
-                        {"type": "string"},
-                        {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "minItems": 1,
-                            "maxItems": 5,
-                        },
-                    ],
+                    "type": "string",
                     "description": (
-                        "Single search query string, OR an array of up to 5 related queries "
-                        "for comprehensive multi-query search. "
-                        "Example single: 'best League of Legends builds season 14'. "
-                        "Example multi: ['League of Legends meta champions 2024', "
-                        "'best ADC builds patch 14.1', 'jungle tier list current patch']"
+                        "The search query. Be specific and include relevant context for better results. "
+                        "Example: 'best League of Legends ADC builds patch 14.1' or 'Elden Ring Shadow of the Erdtree boss locations'"
                     ),
                 },
             },
@@ -181,14 +168,14 @@ async def execute_tool_call(
     """
     Execute a tool call from the OpenAI Realtime API.
     
-    When the voice chat model decides to call a function (e.g., gaming_search),
+    When the voice chat model decides to call a function (e.g., sonar_search),
     your client receives a function_call event from OpenAI. The client should:
     1. Extract the function name and arguments
     2. Call this endpoint with the function details
     3. Send the result back to OpenAI via the WebSocket
     
     **Supported Tools:**
-    - gaming_search: Search for current gaming information
+    - sonar_search: Real-time web search for current, up-to-date information
     
     **Returns:**
     - result: The function execution result
@@ -198,7 +185,7 @@ async def execute_tool_call(
     try:
         logger.info(f"Tool call requested: {request_data.tool_name}")
         
-        if request_data.tool_name == "gaming_search":
+        if request_data.tool_name == "sonar_search":
             # Extract arguments
             query = request_data.arguments.get("query")
             
@@ -209,33 +196,27 @@ async def execute_tool_call(
                     error="Missing required parameter: query",
                 )
             
-            # Execute the search
+            # Execute the search using Perplexity Sonar
+            # This is a simple, stateless query -> response with no conversation tracking
             try:
-                search_request = SearchRequest(
-                    query=query,
-                )
-                search_response = await search_service.search(search_request)
+                # Call Perplexity sonar search
+                response = perplexity_client.sonar_search(query=query)
                 
-                # Format results for the model
+                # Extract the content from the response
+                answer = response.choices[0].message.content if response.choices else "No results found"
+                
+                # Extract citations if available
+                citations = []
+                if hasattr(response, "citations") and response.citations:
+                    citations = response.citations
+                
                 formatted_results = {
-                    "query_type": "multi-query" if search_response.is_multi_query else "single-query",
-                    "query": search_response.query,
-                    "total_results": search_response.total_results,
-                    "results": [
-                        {
-                            "title": result.title,
-                            "url": result.url,
-                            "snippet": result.snippet,
-                        }
-                        for result in search_response.results
-                    ],
+                    "query": query,
+                    "answer": answer,
+                    "citations": citations,
                 }
                 
-                logger.info(
-                    f"Gaming search completed: "
-                    f"{'multi' if search_response.is_multi_query else 'single'}-query, "
-                    f"{search_response.total_results} results"
-                )
+                logger.info(f"Sonar search completed: query='{query}'")
                 
                 return ToolCallResponse(
                     call_id=request_data.call_id,
@@ -244,7 +225,7 @@ async def execute_tool_call(
                 )
                 
             except Exception as e:
-                logger.error(f"Gaming search failed: {str(e)}")
+                logger.error(f"Sonar search failed: {str(e)}")
                 return ToolCallResponse(
                     call_id=request_data.call_id,
                     result={},
@@ -299,20 +280,14 @@ async def get_voice_chat_info(
             "enabled": True,
             "available_tools": [
                 {
-                    "name": "gaming_search",
-                    "description": "Search for current gaming information with single or multi-query support",
-                    "when_to_use": "Patch notes, current meta, recent updates, tier lists, builds",
-                    "supports_multi_query": True,
-                    "multi_query_info": {
-                        "max_queries": 5,
-                        "description": "Can accept up to 5 related queries in a single request for comprehensive research",
-                        "example_single": "best League of Legends builds season 14",
-                        "example_multi": [
-                            "League of Legends meta champions 2024",
-                            "best ADC builds patch 14.1",
-                            "jungle tier list current patch"
-                        ],
-                    },
+                    "name": "sonar_search",
+                    "description": "Real-time web search for current, up-to-date information using Perplexity Sonar",
+                    "when_to_use": "Any current information, patch notes, recent updates, tier lists, builds, news, or when your knowledge might be outdated",
+                    "example_queries": [
+                        "best League of Legends ADC builds patch 14.1",
+                        "Elden Ring Shadow of the Erdtree boss locations",
+                        "Valorant current meta agents"
+                    ],
                 }
             ],
             "workflow": [
