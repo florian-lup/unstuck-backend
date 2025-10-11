@@ -48,6 +48,7 @@ class VoiceChatSessionRequest(BaseModel):
             "  • 'League of Legends best ADC builds patch 14.1'\n"
             "  • 'Elden Ring Shadow of the Erdtree boss weaknesses'\n"
             "  • 'Valorant current meta agents ranked competitive'\n"
+            "- Before performing the search, tell the user that you're performing a search and you'll provide the information in a moment."
         )
         
         if self.game:

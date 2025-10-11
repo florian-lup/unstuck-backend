@@ -205,15 +205,11 @@ async def execute_tool_call(
                 # Extract the content from the response
                 answer = response.choices[0].message.content if response.choices else "No results found"
                 
-                # Extract citations if available
-                citations = []
-                if hasattr(response, "citations") and response.citations:
-                    citations = response.citations
-                
+                # For voice chat, we only return the answer without citations
+                # Citations aren't useful in a voice conversation
                 formatted_results = {
                     "query": query,
                     "answer": answer,
-                    "citations": citations,
                 }
                 
                 logger.info(f"Sonar search completed: query='{query}'")

@@ -20,6 +20,7 @@ class PerplexityClient:
         messages: list[dict[str, Any]],
         model: str,
         search_context_size: str,
+        max_search_results: int | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -29,12 +30,15 @@ class PerplexityClient:
             messages: List of conversation messages
             model: The model to use
             search_context_size: Context size for web search ("low", "medium", "high")
+            max_search_results: Maximum number of search results to use (optional)
             **kwargs: Additional parameters for the API
 
         Returns:
             Chat completion response
         """
-        web_search_options = {"search_context_size": search_context_size}
+        web_search_options: dict[str, Any] = {"search_context_size": search_context_size}
+        if max_search_results is not None:
+            web_search_options["max_search_results"] = max_search_results
 
         params = {
             "model": model,
@@ -124,6 +128,7 @@ class PerplexityClient:
         query: str,
         model: str = "sonar",
         search_context_size: str = "low",
+        max_search_results: int = 5,
         **kwargs: Any,
     ) -> Any:
         """
@@ -137,6 +142,7 @@ class PerplexityClient:
             query: The search query
             model: The model to use (default: "sonar")
             search_context_size: Context size for web search ("low", "medium", "high", default: "medium")
+            max_search_results: Maximum number of search results to use (default: 5)
             **kwargs: Additional parameters for the API
 
         Returns:
@@ -153,6 +159,7 @@ class PerplexityClient:
             messages=messages,
             model=model,
             search_context_size=search_context_size,
+            max_search_results=max_search_results,
             **kwargs,
         )
 
