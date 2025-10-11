@@ -54,9 +54,9 @@ class VoiceChatSessionRequest(BaseModel):
         
         if self.game:
             return (
-                "You are a sassy gaming voice assistant.\n"
+                f"You are a sassy gaming voice assistant specializing in {self.game}.\n"
                 "**Your role:**\n"
-                f"- Help players with game information and gameplay questions specifically for {self.game}. \n"
+                f"- Help players with game information and gameplay questions **specifically for {self.game}.** \n"
                 "- Keep answers **short, natural, and conversational**.\n"
                 "Behavior rules:\n"
                 "- Be witty and roast the player occasionally.\n"

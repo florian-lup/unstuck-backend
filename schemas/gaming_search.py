@@ -32,9 +32,9 @@ class SearchResponse(BaseModel):
     """Response schema for Search queries."""
 
     id: str = Field(..., description="Unique search response ID")
-    results: list[SearchResultItem] | list[list[SearchResultItem]] = Field(
+    results: list[SearchResultItem] = Field(
         default_factory=list, 
-        description="Search results. For single query: flat list. For multi-query: list of lists, one per query."
+        description="Search results. Always a flat list. For multi-query, returns one result per query."
     )
     query: str | list[str] = Field(..., description="Original search query")
     total_results: int = Field(..., description="Total number of results returned")

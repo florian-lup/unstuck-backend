@@ -217,69 +217,25 @@ async def execute_tool_call(
                 search_response = await search_service.search(search_request)
                 
                 # Format results for the model
-                # Handle both single-query and multi-query responses
-                if search_response.is_multi_query:
-                    # Multi-query: format results grouped by query
-                    queries = search_response.query if isinstance(search_response.query, list) else [search_response.query]
-                    
-                    # Type check: ensure results is a list of lists for multi-query
-                    if isinstance(search_response.results, list) and len(search_response.results) > 0:
-                        results_by_query = []
-                        for i, query_results in enumerate(search_response.results):
-                            if isinstance(query_results, list):
-                                results_by_query.append({
-                                    "query": queries[i] if i < len(queries) else f"Query {i+1}",
-                                    "results": [
-                                        {
-                                            "title": result.title,
-                                            "url": result.url,
-                                            "snippet": result.snippet,
-                                        }
-                                        for result in query_results
-                                    ],
-                                    "count": len(query_results),
-                                })
-                        
-                        formatted_results = {
-                            "query_type": "multi-query",
-                            "queries": queries,
-                            "total_results": search_response.total_results,
-                            "results_by_query": results_by_query,
+                formatted_results = {
+                    "query_type": "multi-query" if search_response.is_multi_query else "single-query",
+                    "query": search_response.query,
+                    "total_results": search_response.total_results,
+                    "results": [
+                        {
+                            "title": result.title,
+                            "url": result.url,
+                            "snippet": result.snippet,
                         }
-                    else:
-                        formatted_results = {
-                            "query_type": "multi-query",
-                            "queries": queries,
-                            "total_results": 0,
-                            "results_by_query": [],
-                        }
-                    
-                    logger.info(
-                        f"Multi-query search completed: {len(queries)} queries, "
-                        f"{search_response.total_results} total results"
-                    )
-                else:
-                    # Single query: format as before
-                    # Type check: ensure results is a flat list for single query
-                    results_list = []
-                    if isinstance(search_response.results, list):
-                        for result in search_response.results:
-                            if not isinstance(result, list):  # Ensure it's a SearchResultItem, not a list
-                                results_list.append({
-                                    "title": result.title,
-                                    "url": result.url,
-                                    "snippet": result.snippet,
-                                })
-                    
-                    formatted_results = {
-                        "query_type": "single-query",
-                        "query": search_response.query,
-                        "total_results": search_response.total_results,
-                        "results": results_list,
-                    }
-                    logger.info(
-                        f"Gaming search completed: {search_response.total_results} results"
-                    )
+                        for result in search_response.results
+                    ],
+                }
+                
+                logger.info(
+                    f"Gaming search completed: "
+                    f"{'multi' if search_response.is_multi_query else 'single'}-query, "
+                    f"{search_response.total_results} results"
+                )
                 
                 return ToolCallResponse(
                     call_id=request_data.call_id,

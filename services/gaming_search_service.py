@@ -57,105 +57,32 @@ class SearchService:
                     logger.debug(f"First result: {response.results[0]}")
 
             # Extract and process search results
-            if is_multi_query:
-                # Multi-query: response.results is a list of lists
-                # Each inner list contains results for one query
-                multi_query_results: list[list[SearchResultItem]] = []
-                total_count = 0
-                
-                if hasattr(response, "results") and response.results:
-                    for query_results in response.results:
-                        query_result_items: list[SearchResultItem] = []
-                        for result in query_results:
-                            # Handle different result formats
-                            if isinstance(result, tuple):
-                                # Tuple format: (title, url, snippet, ...)
-                                title = result[0] if len(result) > 0 else ""
-                                url = result[1] if len(result) > 1 else ""
-                                snippet = result[2] if len(result) > 2 else None
-                                date = result[3] if len(result) > 3 else None
-                            elif isinstance(result, dict):
-                                # Dictionary format
-                                title = result.get("title", "")
-                                url = result.get("url", "")
-                                snippet = result.get("snippet")
-                                date = result.get("date")
-                            else:
-                                # Object with attributes
-                                title = getattr(result, "title", "")
-                                url = getattr(result, "url", "")
-                                snippet = getattr(result, "snippet", None)
-                                date = getattr(result, "date", None)
-                            
-                            query_result_items.append(
-                                SearchResultItem(
-                                    title=title,
-                                    url=url,
-                                    snippet=snippet,
-                                    date=date,
-                                )
-                            )
-                        multi_query_results.append(query_result_items)
-                        total_count += len(query_result_items)
-                
-                logger.info(
-                    f"Multi-query search completed - ID: {search_id}, "
-                    f"Queries: {len(multi_query_results)}, "
-                    f"Total results: {total_count}"
-                )
-                
-                return SearchResponse(
-                    id=search_id,
-                    results=multi_query_results,
-                    query=request.query,
-                    total_results=total_count,
-                    created=int(time.time()),
-                    is_multi_query=True,
-                )
-            # Single query: response.results is a flat list
-            single_query_results: list[SearchResultItem] = []
+            # Note: Multi-query returns flat list (one result per query), not nested lists
+            search_results: list[SearchResultItem] = []
             if hasattr(response, "results") and response.results:
                 for result in response.results:
-                    # Handle different result formats
-                    if isinstance(result, tuple):
-                        # Tuple format: (title, url, snippet, ...)
-                        title = result[0] if len(result) > 0 else ""
-                        url = result[1] if len(result) > 1 else ""
-                        snippet = result[2] if len(result) > 2 else None
-                        date = result[3] if len(result) > 3 else None
-                    elif isinstance(result, dict):
-                        # Dictionary format
-                        title = result.get("title", "")
-                        url = result.get("url", "")
-                        snippet = result.get("snippet")
-                        date = result.get("date")
-                    else:
-                        # Object with attributes
-                        title = getattr(result, "title", "")
-                        url = getattr(result, "url", "")
-                        snippet = getattr(result, "snippet", None)
-                        date = getattr(result, "date", None)
-                    
-                    single_query_results.append(
+                    search_results.append(
                         SearchResultItem(
-                            title=title,
-                            url=url,
-                            snippet=snippet,
-                            date=date,
+                            title=result.title,
+                            url=result.url,
+                            snippet=getattr(result, "snippet", None),
+                            date=getattr(result, "date", None),
                         )
                     )
 
             logger.info(
-                f"Search completed - ID: {search_id}, Results: {len(single_query_results)}"
+                f"Search completed - ID: {search_id}, "
+                f"Query type: {'multi' if is_multi_query else 'single'}, "
+                f"Results: {len(search_results)}"
             )
 
             return SearchResponse(
                 id=search_id,
-                results=single_query_results,
+                results=search_results,
                 query=request.query,
-                total_results=len(single_query_results),
+                total_results=len(search_results),
                 created=int(time.time()),
-                is_multi_query=False,
+                is_multi_query=is_multi_query,
             )
 
         except Exception as e:
