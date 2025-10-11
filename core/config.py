@@ -56,6 +56,11 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
+    # OpenAI API (Required for voice chat)
+    openai_api_key: str = Field(
+        ..., description="OpenAI API key", alias="OPENAI_API_KEY"
+    )
+
     # Stripe Configuration
     stripe_api_key: str = Field(
         ..., description="Stripe secret API key", alias="STRIPE_API_KEY"
