@@ -56,19 +56,6 @@ class Settings(BaseSettings):
         ..., description="Perplexity AI API key", alias="PERPLEXITY_API_KEY"
     )
 
-    # OpenAI API (Required for Voice Chat)
-    openai_api_key: str = Field(
-        ..., description="OpenAI API key", alias="OPENAI_API_KEY"
-    )
-    openai_realtime_model: str = Field(
-        default="gpt-realtime-mini",
-        description="OpenAI Realtime model for voice chat",
-    )
-    openai_realtime_voice: str = Field(
-        default="marin",
-        description="Default voice for OpenAI Realtime API (marin, cedar)",
-    )
-
     # Stripe Configuration
     stripe_api_key: str = Field(
         ..., description="Stripe secret API key", alias="STRIPE_API_KEY"

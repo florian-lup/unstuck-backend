@@ -33,10 +33,8 @@ class SubscriptionTier(str, Enum):
 SUBSCRIPTION_LIMITS: dict[SubscriptionTier, dict[str, Any]] = {
     SubscriptionTier.FREE: {
         "max_total_requests": 150,  # Lifetime limit for GAMING CHAT, never resets
-        "max_total_voice_requests": 60,  # Lifetime limit for VOICE CHAT, never resets
     },
     SubscriptionTier.COMMUNITY: {
         "max_monthly_requests": 300,  # Monthly limit for GAMING CHAT
-        "max_monthly_voice_requests": 150,  # Monthly limit for VOICE CHAT
     },
 }

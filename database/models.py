@@ -61,17 +61,6 @@ class User(Base):
         DateTime(timezone=True)
     )  # Date when monthly gaming chat counter was last reset
 
-    # Request tracking fields for VOICE CHAT
-    total_voice_requests: Mapped[int] = mapped_column(
-        nullable=False, default=0
-    )  # Total lifetime voice chat requests (for free tier)
-    monthly_voice_requests: Mapped[int] = mapped_column(
-        nullable=False, default=0
-    )  # Monthly voice chat requests (for community tier)
-    voice_request_count_reset_date: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True)
-    )  # Date when monthly voice chat counter was last reset
-
     # Audit timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
